@@ -101,8 +101,10 @@ cd wrappers/python
 sudo python3 setup.py install
 ```
 
-//For installing in python3. If not working use
+The above code is for installing in python3. If not working use
+```
 sudo python setup.py install
+```
 
 The module can be imported into codes written inside the wrapper/python folder using:
 

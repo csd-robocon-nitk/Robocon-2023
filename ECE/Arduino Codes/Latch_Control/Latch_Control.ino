@@ -1,3 +1,5 @@
+//Program to control latch of shooting mechanism
+
 #include <Servo.h>
 Servo myservo;  
 int pos = 0;    // variable to store the servo position
