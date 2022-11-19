@@ -8,8 +8,8 @@
 int dir1 = 2, dir2 = 4, dir3 = 7, dir4 = 8;
 int pwm1 = 3, pwm2 = 5, pwm3 = 6, pwm4 = 9;
 PS2X ps2x;
-int pwm = 50;
-int deadzone = 20;
+int pwm = 40;
+int deadzone = 10;
 
 void setup() {
   Serial.begin(9600);
@@ -43,28 +43,27 @@ void loop() {
   int RX = ps2x.Analog(PSS_RX);
   int i = 0;
   if (abs(128-LY)>deadzone || abs(128-LX)>deadzone){
-    // float lx = (LX-LY)/1.414;
-    // float ly = (LX+LY)/1.414;
     float p1 = (128-LY)/128.0;       // CONTROL VARS FOR WHEELS 1,3
     float p2 = (128-LX)/128.0;       // CONTROL VARS FOR WHEELS 2,4
-    p1 = (p1+p2)/1.414;
-    p2 = (p1-p2)/1.414;
-    // Serial.print(lx);
-    // Serial.print(ly);
-    Serial.print(LX);
-    Serial.println(LY);
+    Serial.print(p1);
+    Serial.print(" ");
+    Serial.println(p2);    
     move(round(p1*pwm),round(p2*pwm),round(p1*pwm),round(p2*pwm));
+  } 
+  else if (abs(128-RX)>deadzone || abs(128-RY)>deadzone) {
+    float p1 = (128-RX)/128.0; 
+    float p2 = p1*-1; 
+    Serial.print(p1);
+    Serial.print(" ");
+    Serial.println(p2);    
+    move(round(p2*pwm),round(p1*pwm),round(p1*pwm),round(p2*pwm));
   }
   else
-      move(0,0,0,0);
+    move(0,0,0,0);
 }
 
 void move(int p1,int p2,int p3,int p4)
 {
-  // Serial.print(p1);
-  // Serial.print(p2);
-  // Serial.print(p3);
-  // Serial.println(p4);
   analogWrite(pwm1, abs(p1));
   analogWrite(pwm2, abs(p2));
   analogWrite(pwm3, abs(p3));
