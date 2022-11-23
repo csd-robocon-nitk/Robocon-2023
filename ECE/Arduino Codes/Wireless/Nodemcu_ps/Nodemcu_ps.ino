@@ -3,8 +3,8 @@
 #include <SoftwareSerial.h>
 #include "ESPAsyncWebServer.h"
 
-const char* ssid = "CRN";
-const char* password = "roboconnitk";
+const char* ssid = "NITK-NET";
+const char* password = "2K16NITK";
 
 #define PS2_DAT        D7   
 #define PS2_CMD        D6
@@ -45,7 +45,7 @@ String sendps2() {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   int error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, false, false);
   if(error == 0){

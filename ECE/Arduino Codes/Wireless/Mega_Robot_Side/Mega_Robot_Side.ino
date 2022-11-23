@@ -27,7 +27,7 @@ void setup() {
 void loop() {
   while (Serial.available()) {
     msg_str[idx] = Serial.read();
-    if(msg_str[idx] == LF) {
+    if(msg_str[idx] == LF){
       msg_str[idx-1] = 0;
       idx = 0;
       break;
