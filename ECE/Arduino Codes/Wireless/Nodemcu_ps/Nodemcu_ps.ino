@@ -3,8 +3,8 @@
 #include <SoftwareSerial.h>
 #include "ESPAsyncWebServer.h"
 
-const char* ssid = "NITK-NET";
-const char* password = "2K16NITK";
+const char* ssid = "CRN";
+const char* password = "robocon2k23";
 
 #define PS2_DAT        D7   
 #define PS2_CMD        D6

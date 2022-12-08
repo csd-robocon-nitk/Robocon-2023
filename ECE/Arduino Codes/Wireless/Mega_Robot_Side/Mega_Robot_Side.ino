@@ -4,11 +4,13 @@ char msg_str[100];
 char str_buff[7];
 int idx;
 String str;
-int dir1 = 2, dir2 = 4, dir3 = 7, dir4 = 8;
-int pwm1 = 3, pwm2 = 5, pwm3 = 6, pwm4 = 9;
+int dir1 = 8, dir2 = 9, dir3 = 10, dir4 = 11;
+int pwm1 = 4, pwm2 = 5, pwm3 = 6, pwm4 = 7;
+float p1 = 0, p2 = 0, p3 = 0, p4 = 0;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  Serial2.begin(115200);
   pinMode(dir1,OUTPUT);
   pinMode(dir2, OUTPUT);
   pinMode(dir3, OUTPUT);
@@ -25,8 +27,8 @@ void setup() {
 }
 
 void loop() {
-  while (Serial.available()) {
-    msg_str[idx] = Serial.read();
+  while (Serial2.available()) {
+    msg_str[idx] = Serial2.read();
     if(msg_str[idx] == LF){
       msg_str[idx-1] = 0;
       idx = 0;
@@ -34,7 +36,7 @@ void loop() {
     }
     idx++;
   }
-  
+  //Serial.println(msg_str);
   int i = 4;
   int j = 0;
   int var =1;
@@ -66,18 +68,47 @@ void loop() {
       i++;
       j++;
     }  
+  }    
+  if(lx >= 0 && lx<p1){
+    lx = max(lx,p1-3);
+  } 
+  else{
+    lx = min(lx,p1+3);  
   }
-  Serial.print("motor1:");
-  Serial.print(lx);
-  Serial.print(" motor2:");
+  if(ly<p2){
+    ly = max(ly,p2-3);
+  } 
+  else{
+    ly = min(ly,p2+3);  
+  }
+  if(rx<p3){
+    rx = max(rx,p3-3);
+  }
+  else{
+    rx = min(rx,p3+3);  
+  } 
+  if(ry<p4){
+    ry = max(ry,p4-3);
+  }   
+  else{
+    ry = min(ry,p4+3);  
+  } 
+  Serial.print("Motor1: ");
   Serial.print(ly);
-  Serial.print(" motor3:");
+  Serial.print(", Motor2: ");
   Serial.print(rx);
-  Serial.print(" motor4:");
-  Serial.println(ry);
+  Serial.print(", Motor3: ");
+  Serial.print(ry);
+  Serial.print(", Motor4: ");
+  Serial.println(lx);   
+  move(round(ly),round(rx),round(ry),round(lx));
+  p2 = ly;
+  p1 = lx;  
+  p3 = rx;
+  p4 = ry;
 }  
 
-void move(int p1,int p2,int p3,int p4)
+void move(int p1,int p2,int p3,int p4)    
 {
   analogWrite(pwm1, abs(p1));
   analogWrite(pwm2, abs(p2));
