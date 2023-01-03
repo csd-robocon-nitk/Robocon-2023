@@ -19,6 +19,11 @@ Provides an easy way to build web servers.
 ##### ESPAsyncTCP
 Required for ESPAsyncWebServer library
 
+## Bugs
+* Wifi connection unstable.
+* Encoder reading not reliable at high rpm.
+* Loose contacts at multiple places and messy wire connections. Needs to be organized.
+
 ### References:
 - PS2 controller with Arduino: https://create.arduino.cc/projecthub/electropeak/how-to-interface-ps2-wireless-controller-w-arduino-a0a813
 - Add NodeMCU to Arduino IDE: https://create.arduino.cc/projecthub/electropeak/getting-started-w-nodemcu-esp8266-on-arduino-ide-28184f

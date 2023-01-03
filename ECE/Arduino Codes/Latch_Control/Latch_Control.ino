@@ -9,7 +9,7 @@ int state=0;
 int prevState=1;
 long int t1;
 void setup() {
-  myservo.attach(9);  // attaches the servo on pin 9 to the servo object
+  myservo.attach(10);  // attaches the servo on pin 10 to the servo object
   pinMode(buttonPin,INPUT_PULLUP);
 }
 

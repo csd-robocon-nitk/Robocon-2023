@@ -109,7 +109,23 @@ void loop() {
 }  
 
 void move(int p1,int p2,int p3,int p4)    
-{
+{ 
+  if(p1>40)
+    p1 = 40;
+  else if (p1<-40)
+    p1 = -40; 
+  if(p2>40)
+    p2 = 40;
+  else if (p2<-40)
+    p2 = -40;
+  if(p3>40)
+    p3 = 40;
+  else if (p3<-40)
+    p3 = -40;
+  if(p4>40)
+    p4 = 40;
+  else if (p4<-40)
+    p4 = -40;
   analogWrite(pwm1, abs(p1));
   analogWrite(pwm2, abs(p2));
   analogWrite(pwm3, abs(p3));

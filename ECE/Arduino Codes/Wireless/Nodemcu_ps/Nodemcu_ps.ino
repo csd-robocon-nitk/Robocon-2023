@@ -12,7 +12,7 @@ const char* password = "robocon2k23";
 #define PS2_CLK        D5
 
 PS2X ps2x;
-int pwm = 40;
+int pwm = 100;
 int deadzone = 10;
 AsyncWebServer server(80);
 String msg; 
@@ -29,13 +29,14 @@ String sendps2() {
     p1 = (128-LY)/128.0;       // CONTROL VARS FOR WHEELS 1,3
     p2 = (128-LX)/128.0;       // CONTROL VARS FOR WHEELS 2,4
     msg = String("val")+String(" ")+String(round(p1*pwm))+String(" ")+String(round(p2*pwm))+String(" ")+String(round(p1*pwm))+String(" ")+String(round(p2*pwm)); 
-  } 
-  else if (abs(128-RX)>deadzone || abs(128-RY)>deadzone) {
-    p1 = (128-RX)/128.0; 
-    p2 = p1*-1;  
+  }
+  if(abs(128-RX)>deadzone || abs(128-RY)>deadzone) {
+    float vel = (128-RX)/128.0; 
+    p1 = (vel+p1)/2.0;    
+    p2 = (p2-vel)/2.0;  
     msg = String("val")+String(" ")+String(round(p2*pwm))+String(" ")+String(round(p1*pwm))+String(" ")+String(round(p1*pwm))+String(" ")+String(round(p2*pwm));
   }
-  else{
+  if(!(abs(128-LY)>deadzone || abs(128-LX)>deadzone||abs(128-RX)>deadzone || abs(128-RY)>deadzone)){
     p1 = 0;
     p2 = 0;
     msg = String("val")+String(" ")+String(round(p2*pwm))+String(" ")+String(round(p1*pwm))+String(" ")+String(round(p1*pwm))+String(" ")+String(round(p2*pwm)); 
