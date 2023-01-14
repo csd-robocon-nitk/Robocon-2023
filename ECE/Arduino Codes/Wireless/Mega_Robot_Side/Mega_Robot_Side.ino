@@ -4,8 +4,8 @@ char msg_str[100];
 char str_buff[7];
 int idx;
 String str;
-int dir1 = 8, dir2 = 9, dir3 = 10, dir4 = 11;
-int pwm1 = 4, pwm2 = 5, pwm3 = 6, pwm4 = 7;
+int dir1 = 4, dir2 = 6, dir3 = 8, dir4 = 10;
+int pwm1 = 5, pwm2 = 7, pwm3 = 9, pwm4 = 11;
 float p1 = 0, p2 = 0, p3 = 0, p4 = 0;
 
 void setup() {

@@ -1,11 +1,11 @@
-#define encA 3
-#define encB 24
-#define pwm_pin 5
-#define dir 9
+#define encA 51
+#define encB 53
+#define pwm_pin 11
+#define dir 10
 
 int count_cur = 0, count_prev = 0;
 float e_int = 0;
-int pwm = 10,rpm_tar = 80;
+int pwm = 10,rpm_tar = - 80;
 float rpm = 0.00;
 int currentState;
 int lastState;
@@ -16,7 +16,8 @@ void setup() {
 	pinMode(encB,INPUT);
   pinMode(pwm_pin, OUTPUT);
   pinMode(dir, OUTPUT);
-	Serial.begin(9600);t_curr = micros();
+	Serial.begin(9600);
+  t_curr = micros();
 	lastState = digitalRead(encA);
   t_prev = micros();
 }

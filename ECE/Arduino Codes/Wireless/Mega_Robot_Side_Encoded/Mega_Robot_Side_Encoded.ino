@@ -25,10 +25,10 @@ Motor motors[4];
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
-  motors[0].ENCA = 2, motors[0].ENCB = 23, motors[0].PWM = 4, motors[0].DIR = 8;
-  motors[1].ENCA = 3, motors[1].ENCB = 24, motors[1].PWM = 5, motors[1].DIR = 9;
-  motors[2].ENCA = 20, motors[2].ENCB = 25, motors[2].PWM = 6, motors[2].DIR = 10;
-  motors[3].ENCA = 15, motors[3].ENCB = 14, motors[3].PWM = 7, motors[3].DIR = 11;
+  motors[0].ENCA = 25, motors[0].ENCB = 23, motors[0].PWM = 5, motors[0].DIR = 4;
+  motors[1].ENCA = 33, motors[1].ENCB = 31, motors[1].PWM = 7, motors[1].DIR = 6;
+  motors[2].ENCA = 41, motors[2].ENCB = 43, motors[2].PWM = 9, motors[2].DIR = 8;
+  motors[3].ENCA = 51, motors[3].ENCB = 53, motors[3].PWM = 11, motors[3].DIR = 10;
   for (int i = 0; i < 4; i++) {
     pinMode(motors[i].ENCA, INPUT);
     pinMode(motors[i].ENCB, INPUT);
@@ -106,6 +106,8 @@ void loop() {
       motors[i].e_int = motors[i].e_int + motors[i].e*2;
       float p = 2*motors[i].e;
       float inte = motors[i].e_int*5.0;
+      Serial.print(i); 
+      Serial.print(": ");   
       Serial.print(p);
       Serial.print(" ");
       Serial.print(inte);
@@ -122,8 +124,13 @@ void loop() {
       analogWrite(motors[i].PWM, (int)fabs(motors[i].pwr));   
       motors[i].count_cur = 0;
       motors[i].t_prev = micros(); 
-      // Serial.print(i); 
-      // Serial.print(": ");   
+      Serial.print(motors[i].rpm);
+      Serial.print(" ");
+      else
+        digitalWrite(motors[i].DIR, 1); 
+      analogWrite(motors[i].PWM, (int)fabs(motors[i].pwr));   
+      motors[i].count_cur = 0;
+      motors[i].t_prev = micros(); 
       Serial.print(motors[i].rpm);
       Serial.print(" ");
       Serial.print(motors[i].rpm_tar);
@@ -136,12 +143,3 @@ void loop() {
   } 
   delay(1);
 }
-
-// void setMotor(struct Motor motor, int dir, int pwr) {
-//   analogWrite(motor.PWM, pwr);
-//   if (dir == 1)
-//     digitalWrite(motor.DIR, LOW);
-//   else if (dir == -1){
-//     digitalWrite(motor.DIR, HIGH);
-//   }  
-// }

@@ -15,21 +15,15 @@ Adafruit_MPU6050 mpu;
 void setup(void) {
   Serial.begin(115200);
   Serial.println("Adafruit MPU6050 test!");
-
-  // Try to initialize!
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
   }
   Serial.println("MPU6050 Found!");
-
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-
   Serial.println("");
   delay(1000);
-
   Serial.println("Calibrating....Do not move mpu6050");
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
