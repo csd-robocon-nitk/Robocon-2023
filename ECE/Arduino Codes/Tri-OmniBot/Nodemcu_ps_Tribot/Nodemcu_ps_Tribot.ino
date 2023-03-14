@@ -12,6 +12,8 @@ const char* password = "robocon2k23";
 #define PS2_CLK        D5
 
 PS2X ps2x;
+int pwm = 100;
+int deadzone = 10;
 AsyncWebServer server(80);
 String msg; 
 
@@ -22,9 +24,9 @@ String sendps2() {
   int RY = ps2x.Analog(PSS_RY);
   int RX = ps2x.Analog(PSS_RX);
   int i = 0;
-  float vl = (128-LY)*1.4/128.0;
-  float vn = (LX-128)*1.4/128.0;
-  float vr = (RX-128)*0.05/128.0;
+  float vl = (128-LY)*100/128.0;
+  float vn = (LX-128)*100/128.0;
+  float vr = (RX-128)*100/128.0;
   msg = String("val")+String(" ")+String(vl)+String(" ")+String(vn)+String(" ")+String(vr); 
   Serial.println(msg);
   return msg;
@@ -33,18 +35,15 @@ String sendps2() {
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-  Serial.println("Connect the Controller");
-  delay(10000);
+  digitalWrite(LED_BUILTIN, HIGH); 
   int error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, false, false);
-  if(error == 0){
-    digitalWrite(LED_BUILTIN, HIGH);   
-  }
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
+  Serial.print("Connected");
+  digitalWrite(LED_BUILTIN, LOW); 
   IPAddress IP = WiFi.localIP();
   Serial.print("AP IP address: ");
   Serial.println(IP);

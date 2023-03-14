@@ -20,7 +20,7 @@ String msg;
 String sendps2() {
   float p1 = 0,p2 = 0;
   ps2x.read_gamepad();  
-  int LY = ps2x.Analog(PSS_LY);
+  int LY = ps2x.Analog(PSS_LY);endps2
   int LX = ps2x.Analog(PSS_LX);
   int RY = ps2x.Analog(PSS_RY);
   int RX = ps2x.Analog(PSS_RX);

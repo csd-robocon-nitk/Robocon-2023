@@ -9,14 +9,6 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 #include <ESP8266WiFiMulti.h>
-#define LF 0x0A 
-
-char msg_str[100]; 
-char str_buff[7];
-int idx;
-String str;
-int dir1 = 2, dir2 = 4, dir3 = 7, dir4 = 8;
-int pwm1 = 3, pwm2 = 5, pwm3 = 6, pwm4 = 9;
 
 ESP8266WiFiMulti WiFiMulti;
 
@@ -25,7 +17,7 @@ const char* ssid = "CRN";
 const char* password = "robocon2k23";
 
 //Your IP address or domain name with URL path(refer to the nodemcu code on remote controller side for the IP address)
-const char* serverName = "http://192.168.0.173/controller";
+const char* serverName = "http://192.168.0.107/controller";
 
 String skps;
 

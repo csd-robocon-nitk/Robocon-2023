@@ -2,7 +2,7 @@
 
 #include <Servo.h>
 Servo myservo;  
-int pos = 0;    // variable to store the servo position
+int pos = 11;    // variable to store the servo position
 int buttonState=1;
 int buttonPin=11;
 int state=0;
@@ -11,6 +11,7 @@ long int t1;
 void setup() {
   myservo.attach(10);  // attaches the servo on pin 10 to the servo object
   pinMode(buttonPin,INPUT_PULLUP);
+  myservo.write(pos);
 }
 
 void loop() {
