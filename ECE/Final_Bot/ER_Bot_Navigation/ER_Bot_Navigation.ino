@@ -17,15 +17,19 @@ public:
   short int dir = 0;
   float rpm_tar;
   long int t_prev, t_curr;
-  float e_int;
+  float e_int = 0;
   float rpm = 0.00;
+  float kp = 0;
+  float ki = 0;
 
   Motor() {}
-  Motor(int pwm, int dir, int enca, int encb) {
+  Motor(int pwm, int dir, int enca, int encb, float kp_value, float ki_value) {
     PWM = pwm;
     DIR = dir;
     ENCA = enca;
     ENCB = encb;
+    kp = kp_value;
+    ki = ki_value;
     count = 0;
     pinMode(ENCA, INPUT);
     pinMode(ENCB, INPUT);
@@ -39,7 +43,7 @@ public:
 
 Motor motors[3];
 
-float mat[3][3] = { { 0, -1, 1 }, { 1.1547, 2, 1 }, { -1.1547, 2, 1 } };
+float mat[3][3] = { { 0, -1.6, 0.8 }, { 1.1547, 0.8, 0.8 }, { -1.1547, 0.8, 0.8 } };
 
 float vel[3] = { 0, 0, 0 };
 
@@ -55,9 +59,9 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
 
-  motors[0] = Motor(5, 4, 2, 10);
-  motors[1] = Motor(7, 6, 3, 11);
-  motors[2] = Motor(9, 8, 18, 12);
+  motors[0] = Motor(5, 4, 2, 10, 0.5, 1.5);     // Tune it
+  motors[1] = Motor(7, 6, 3, 11, 0.5, 1.5);
+  motors[2] = Motor(9, 8, 18, 12, 0.5, 1.5);
 
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
@@ -101,7 +105,6 @@ void loop() {
       j++;
     }
   }
-
   multiply();
   Serial.print(motors[0].rpm);
   Serial.print(" ");
@@ -111,22 +114,26 @@ void loop() {
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
-  //Serial.println();
 }
 
 void multiply() {
-  motors[0].rpm_tar = (mat[0][0] * vel[0] + mat[0][1] * vel[1] + mat[0][2] * vel[2])/1.5;
-  motors[1].rpm_tar = (mat[1][0] * vel[0] + mat[1][1] * vel[1] + mat[1][2] * vel[2])/1.5;
-  motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2])/1.5;
+  motors[0].rpm_tar = (mat[0][0] * vel[0] + mat[0][1] * vel[1] + mat[0][2] * vel[2]);
+  motors[1].rpm_tar = (mat[1][0] * vel[0] + mat[1][1] * vel[1] + mat[1][2] * vel[2]);
+  motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
 }
 
 void move_motor(Motor *m) {
   m->t_curr = millis();
   if (m->t_curr - m->t_prev >= 200) {
     m->rpm = m->count * 3;
+    m->e_int = m ->e_int + (m->e * 0.2);
     m->e = m->rpm_tar - m->rpm;
-    m->e_int = m->e_int + (m->e * 0.2);
-    m->pwr = 0.15*m->e + 1.2*m->e_int;
+    m->pwr = m->kp*m->e + m->ki*m->e_int;
+    if(m->rpm_tar==0 && m->pwr<=30){
+      m->pwr = 0;
+      m->e = 0;
+      m->e_int = 0;
+    }
     m->count = 0;
     m->t_prev = millis();
   }
