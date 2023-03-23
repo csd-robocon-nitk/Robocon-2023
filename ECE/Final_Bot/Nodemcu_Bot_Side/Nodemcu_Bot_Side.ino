@@ -56,8 +56,8 @@ void loop()
   
   long rssi = WiFi.RSSI();
   
-  if (rssi <- 80)
-    Serial.println("val 0.00 0.00 0.00");
+  if (rssi <= 80)
+    Serial.println("val 0.00 0.00 0.00 0.00");
   else
     Serial.println(skps);
   
