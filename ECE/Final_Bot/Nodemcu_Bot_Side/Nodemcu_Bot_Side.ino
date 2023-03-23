@@ -10,6 +10,8 @@
 #include <WiFiClient.h>
 #include <ESP8266WiFiMulti.h>
 
+#define RST D2 
+
 ESP8266WiFiMulti WiFiMulti;
 
 // NOTE: Enter your ssid and password of your mobile hotspot
@@ -21,55 +23,73 @@ const char* serverName = "http://192.168.0.107/controller";
 
 String skps;
 
-void setup() {
+void setup() 
+{
   // Initializing serial interfaces
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  pinMode(RST, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(RST, HIGH);  
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
   // Connecting to WiFi
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED) 
+  {
     delay(500);
     Serial.print(".");
   }
   
   Serial.println("");
   Serial.println("Connected to WiFi");
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
-void loop() {
+void loop() 
+{
   // Retrieving data from HTTP server on the NodeMCU
   skps = httpGETRequest(serverName);
-  Serial.println(skps);
+  if(skps == "rst") digitalWrite(RST, LOW);
+  else digitalWrite(RST, HIGH);
+  
+  long rssi = WiFi.RSSI();
+  
+  if (rssi <- 80)
+    Serial.println("val 0.00 0.00 0.00");
+  else
+    Serial.println(skps);
+  
 }
 
-String httpGETRequest(const char* serverName) {
+String httpGETRequest(const char* serverName)
+{
   WiFiClient client;
   HTTPClient http;
     
-  // Your IP address with path or Domain name with URL path 
+  // Your IP address with path or Domain name with URL path
   http.begin(client, serverName);
-  
+
   // Send HTTP GET request
   int httpResponseCode = http.GET();
-  
-  String payload = "--"; 
-  
-  if (httpResponseCode>0) {
+
+  String payload = "val 0.00 0.00 0.00";
+
+  if (httpResponseCode>0)
+  {
 //    Serial.print("HTTP Response code: ");
 //    Serial.println(httpResponseCode);
     payload = http.getString();
   }
-  else {
+
+  else
+  {
 //    Serial.print("Error code: ");
 //    Serial.println(httpResponseCode);
   }
-  // Free resources
   http.end();
 
   return payload;
 }
+

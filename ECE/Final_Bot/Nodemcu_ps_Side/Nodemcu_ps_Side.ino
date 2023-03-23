@@ -23,11 +23,20 @@ String sendps2() {
   int LX = ps2x.Analog(PSS_LX);
   int RY = ps2x.Analog(PSS_RY);
   int RX = ps2x.Analog(PSS_RX);
+  int CIR = ps2x.Button(PSB_CIRCLE);
+  int UP = ps2x.Button(PSB_PAD_UP);  
+  int DOWN = ps2x.Button(PSB_PAD_DOWN);  
   int i = 0;
   float vl = (128-LY)*100/128.0;
   float vn = (LX-128)*100/128.0;
   float vr = (RX-128)*100/128.0;
-  msg = String("val")+String(" ")+String(vl)+String(" ")+String(vn)+String(" ")+String(vr); 
+  
+  int lift;
+  if (UP) lift = 1;
+  else if (DOWN) lift = -1;
+  else lift = 0;
+  if(CIR) msg = "rst";
+  else msg = String("val")+String(" ")+String(vl)+String(" ")+String(vn)+String(" ")+String(vr)+String(" ")+String(lift); 
   Serial.println(msg);
   return msg;
 }

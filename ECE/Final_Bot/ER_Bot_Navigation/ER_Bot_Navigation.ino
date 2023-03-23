@@ -35,6 +35,16 @@ public:
   float ki = 0;
 
   Motor() {}
+  Motor(int pwm, int dir) {
+    PWM = pwm;
+    DIR = dir;
+    count = 0;
+    pinMode(PWM, OUTPUT);
+    pinMode(DIR, OUTPUT);
+    analogWrite(PWM, LOW);
+    digitalWrite(DIR, LOW);
+
+  }
   Motor(int pwm, int dir, int enca, int encb, float kp_value, float ki_value) {
     PWM = pwm;
     DIR = dir;
@@ -54,17 +64,20 @@ public:
 };
 
 Motor motors[3];
+Motor lift;
 
 float vel[3] = { 0, 0, 0 };
 float glb_vel[3] = { 0, 0, 0 };
 
-void update_count(Motor m) {
-  if (digitalRead(m.ENCB) != 1) {
-    m.count++;
-  } else {
-    m.count--;
-  }
-}
+float lift_sts = 0;
+
+// void update_count(Motor m) {
+//   if (digitalRead(m.ENCB) != 1) {
+//     m.count++;
+//   } else {
+//     m.count--;
+//   }
+// }
 
 void setup() {
   Serial.begin(115200);
@@ -89,6 +102,8 @@ void setup() {
   motors[1] = Motor(7, 6, 3, 11, 0.5, 1.5);
   motors[2] = Motor(9, 8, 18, 12, 0.5, 1.5);
 
+  lift = Motor(33,31);
+
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
@@ -107,12 +122,12 @@ void loop() {
     }
     idx++;
   }
-  Serial.println(msg_str);
+  // Serial.println(msg_str);
   int i = 4;
   int j = 0;
   int var = 1;
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 3) {
+    while (var <= 4) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
         str_buff[j] = 0;
         switch (var) {
@@ -125,6 +140,9 @@ void loop() {
           case 3:
             glb_vel[2] = -1*atof(str_buff);
             break;
+          case 4:
+            lift_sts = atof(str_buff);
+            break;
         }
         var++;
         j = -1;
@@ -136,14 +154,16 @@ void loop() {
     }
   }
   multiply();
-  Serial.print(motors[0].rpm_tar);
-  Serial.print(" ");
-  Serial.print(motors[1].rpm_tar);
-  Serial.print(" ");
-  Serial.println(motors[2].rpm_tar);
+  // Serial.print(motors[0].rpm_tar);
+  // Serial.print(" ");
+  // Serial.print(motors[1].rpm_tar);
+  // Serial.print(" ");
+  // Serial.println(motors[2].rpm_tar);
+  Serial.println(lift_sts);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
+  pick(&lift,lift_sts);
 }
 
 void multiply() {
@@ -159,7 +179,7 @@ void multiply() {
     angle = angle - 360;
   if(angle<=-360)
     angle = angle + 360;
-  Serial.println(angle);
+  // Serial.println(angle);
   angle = angle*PI/180;
   vel[0] = glb_vel[0]*cos(angle) - glb_vel[1]*sin(angle);
   vel[1] = glb_vel[0]*sin(angle) + glb_vel[1]*cos(angle);
@@ -167,6 +187,20 @@ void multiply() {
   motors[0].rpm_tar = (mat[0][0] * vel[0] + mat[0][1] * vel[1] + mat[0][2] * vel[2]);
   motors[1].rpm_tar = (mat[1][0] * vel[0] + mat[1][1] * vel[1] + mat[1][2] * vel[2]);
   motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
+}
+
+void pick(Motor *m, float sts){
+  int pwm;
+  int st = (int) sts;
+  // switch(st){
+  //   case 0: pwm = 0; break;
+  //   case 1: pwm = 1; digitalWrite(m->DIR,0); break;
+  //   case -1: pwm = 1; digitalWrite(m->DIR,1);
+  // }
+  if(sts == 0) pwm = 0;
+  else if(sts==1){pwm = 1; digitalWrite(m->DIR,0);}
+  else if(sts==-1){pwm = 1; digitalWrite(m->DIR,1);}
+  digitalWrite(m->PWM,pwm);
 }
 
 void move_motor(Motor *m) {
