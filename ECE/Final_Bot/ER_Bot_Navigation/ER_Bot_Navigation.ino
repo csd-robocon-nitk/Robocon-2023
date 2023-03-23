@@ -6,10 +6,9 @@
 
 float z = 0;
 sensors_event_t a, g, temp;
-float err_z, curr_a = 0;
+float err_z;
 Adafruit_MPU6050 mpu;
 
-long int m_t_prev, m_t_curr;
 char msg_str[100];
 char str_buff[7];
 int idx;
@@ -43,7 +42,6 @@ public:
     pinMode(DIR, OUTPUT);
     analogWrite(PWM, LOW);
     digitalWrite(DIR, LOW);
-
   }
   Motor(int pwm, int dir, int enca, int encb, float kp_value, float ki_value) {
     PWM = pwm;
@@ -71,14 +69,6 @@ float glb_vel[3] = { 0, 0, 0 };
 
 float lift_sts = 0;
 
-// void update_count(Motor m) {
-//   if (digitalRead(m.ENCB) != 1) {
-//     m.count++;
-//   } else {
-//     m.count--;
-//   }
-// }
-
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
@@ -98,21 +88,33 @@ void setup() {
   Serial.println("Done");
   Serial.println("");
 
-  motors[0] = Motor(5, 4, 2, 10, 0.5, 1.5);     // Tune it
+  motors[0] = Motor(5, 4, 2, 10, 0.5, 1.5);  // Tune it
   motors[1] = Motor(7, 6, 3, 11, 0.5, 1.5);
   motors[2] = Motor(9, 8, 18, 12, 0.5, 1.5);
 
-  lift = Motor(33,31);
+  lift = Motor(33, 31);
 
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
 
   digitalWrite(LED_BUILTIN, 1);
-  m_t_prev = millis();
+
+  cli();
+  TCCR1B |= (1 << WGM12) | (1 << CS11);
+  OCR1A = 20000;
+  TIMSK1 |= (1 << OCIE1A);
+  sei();
+}
+
+ISR(TIMER1_COMPA_vect) {
+  vel_z = g.gyro.z - err_z;
+  cur_z = vel_z * 0.573;
+  z = (fabs(cur_z) > 0.03) ? z + (cur_z / 10) : z;
 }
 
 void loop() {
+  mpu.getEvent(&a, &g, &temp);
   while (Serial2.available()) {
     msg_str[idx] = Serial2.read();
     if (msg_str[idx] == LF) {
@@ -122,7 +124,6 @@ void loop() {
     }
     idx++;
   }
-  // Serial.println(msg_str);
   int i = 4;
   int j = 0;
   int var = 1;
@@ -138,7 +139,7 @@ void loop() {
             glb_vel[1] = atof(str_buff);
             break;
           case 3:
-            glb_vel[2] = -1*atof(str_buff);
+            glb_vel[2] = -1 * atof(str_buff);
             break;
           case 4:
             lift_sts = atof(str_buff);
@@ -154,63 +155,57 @@ void loop() {
     }
   }
   multiply();
-  // Serial.print(motors[0].rpm_tar);
-  // Serial.print(" ");
-  // Serial.print(motors[1].rpm_tar);
-  // Serial.print(" ");
-  // Serial.println(motors[2].rpm_tar);
+  Serial.print(motors[0].rpm_tar);
+  Serial.print(" ");
+  Serial.print(motors[1].rpm_tar);
+  Serial.print(" ");
+  Serial.print(motors[2].rpm_tar);
+  Serial.print(" ");
   Serial.println(lift_sts);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
-  pick(&lift,lift_sts);
+  pick(&lift, lift_sts);
 }
 
 void multiply() {
-  m_t_curr = millis();
-  if (m_t_curr - m_t_prev >= 10) {
-    mpu.getEvent(&a, &g, &temp);
-    float vel_z = g.gyro.z - err_z;
-    float cur_z = vel_z * 0.573;
-    z = (cur_z >= 0.03 || cur_z <= -0.03) ? (z + cur_z * 1.36) : z;
-  }
-  float angle = z*36/89.7;
-  if(angle>=360)
+  float angle = z;
+  if (angle >= 360)
     angle = angle - 360;
-  if(angle<=-360)
+  if (angle <= -360)
     angle = angle + 360;
   // Serial.println(angle);
-  angle = angle*PI/180;
-  vel[0] = glb_vel[0]*cos(angle) - glb_vel[1]*sin(angle);
-  vel[1] = glb_vel[0]*sin(angle) + glb_vel[1]*cos(angle);
+  angle = angle * PI / 180;
+  vel[0] = glb_vel[0] * cos(angle) - glb_vel[1] * sin(angle);
+  vel[1] = glb_vel[0] * sin(angle) + glb_vel[1] * cos(angle);
   vel[2] = glb_vel[2];
   motors[0].rpm_tar = (mat[0][0] * vel[0] + mat[0][1] * vel[1] + mat[0][2] * vel[2]);
   motors[1].rpm_tar = (mat[1][0] * vel[0] + mat[1][1] * vel[1] + mat[1][2] * vel[2]);
   motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
 }
 
-void pick(Motor *m, float sts){
+void pick(Motor *m, float sts) {
   int pwm;
-  int st = (int) sts;
-  // switch(st){
-  //   case 0: pwm = 0; break;
-  //   case 1: pwm = 1; digitalWrite(m->DIR,0); break;
-  //   case -1: pwm = 1; digitalWrite(m->DIR,1);
-  // }
-  if(sts == 0) pwm = 0;
-  else if(sts==1){pwm = 1; digitalWrite(m->DIR,0);}
-  else if(sts==-1){pwm = 1; digitalWrite(m->DIR,1);}
-  digitalWrite(m->PWM,pwm);
+  int st = (int)sts;
+  if (sts == 0) pwm = 0;
+  else if (sts == 1) {
+    pwm = 1;
+    digitalWrite(m->DIR, 0);
+  } else if (sts == -1) {
+    pwm = 1;
+    digitalWrite(m->DIR, 1);
+  }
+  digitalWrite(m->PWM, pwm);
 }
 
 void move_motor(Motor *m) {
   m->t_curr = millis();
   if (m->t_curr - m->t_prev >= 200) {
     m->rpm = m->count * 3;
-    m->e_int = m ->e_int + (m->e * 0.2);
     m->e = m->rpm_tar - m->rpm;
-    m->pwr = m->kp*m->e + m->ki*m->e_int;
-    if(m->rpm_tar==0){
+    m->e_int = m->e_int + (m->e * 0.2);
+    m->pwr = m->kp * m->e + m->ki * m->e_int;
+    if (m->rpm_tar == 0) {
       m->pwr = 0;
       m->e = 0;
       m->e_int = 0;
@@ -227,26 +222,26 @@ void move_motor(Motor *m) {
   analogWrite(m->PWM, (int)fabs(m->pwr));
 }
 
-void update_count_0(){
+void update_count_0() {
   if (digitalRead(motors[0].ENCB) != 1) {
-        motors[0].count ++;
-      } else {  
-        motors[0].count --;
-      }
+    motors[0].count++;
+  } else {
+    motors[0].count--;
+  }
 }
 
-void update_count_1(){
+void update_count_1() {
   if (digitalRead(motors[1].ENCB) != 1) {
-        motors[1].count ++;
-      } else {  
-        motors[1].count --;
-      }
+    motors[1].count++;
+  } else {
+    motors[1].count--;
+  }
 }
 
-void update_count_2(){
+void update_count_2() {
   if (digitalRead(motors[2].ENCB) != 1) {
-        motors[2].count ++;
-      } else {  
-        motors[2].count --;
-      }
+    motors[2].count++;
+  } else {
+    motors[2].count--;
+  }
 }
