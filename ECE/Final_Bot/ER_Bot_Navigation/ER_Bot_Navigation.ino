@@ -13,6 +13,7 @@ char msg_str[100];
 char str_buff[7];
 int idx;
 String str;
+float vel_z, cur_z;
 
 float mat[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
@@ -127,6 +128,7 @@ void loop() {
   int i = 4;
   int j = 0;
   int var = 1;
+  
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
     while (var <= 4) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
@@ -155,6 +157,7 @@ void loop() {
     }
   }
   multiply();
+
   Serial.print(motors[0].rpm_tar);
   Serial.print(" ");
   Serial.print(motors[1].rpm_tar);
@@ -184,9 +187,8 @@ void multiply() {
   motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
 }
 
-void pick(Motor *m, float sts) {
+void pick(Motor *m, int sts) {
   int pwm;
-  int st = (int)sts;
   if (sts == 0) pwm = 0;
   else if (sts == 1) {
     pwm = 1;
@@ -202,8 +204,9 @@ void move_motor(Motor *m) {
   m->t_curr = millis();
   if (m->t_curr - m->t_prev >= 200) {
     m->rpm = m->count * 3;
-    m->e = m->rpm_tar - m->rpm;
     m->e_int = m->e_int + (m->e * 0.2);
+    m->e = m->rpm_tar - m->rpm;
+    
     m->pwr = m->kp * m->e + m->ki * m->e_int;
     if (m->rpm_tar == 0) {
       m->pwr = 0;
