@@ -1,16 +1,29 @@
 /*
-  Code for Nodemcu(ESP8266) on the robot side
+  Code for Nodemcu(ESP8266-07) on the robot side
   It is connected to serial port of Arduino Mega. Refer to the below code for pins
   It acts as a HTTP client
   The data is requested from http://<AP IP address of the hotspot obtained from the other nodemcu>/controller
 */
+#define TIMER_INTERRUPT_DEBUG         0
+#define _TIMERINTERRUPT_LOGLEVEL_     0
+
+// Select a Timer Clock
+#define USING_TIM_DIV1                false           // for shortest and most accurate timer
+#define USING_TIM_DIV16               false           // for medium time and medium accurate timer
+#define USING_TIM_DIV256              true            // for longest timer but least accurate. Default
+
+#include "ESP8266TimerInterrupt.h"
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
+
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 #include <ESP8266WiFiMulti.h>
 
-#define RST D2 
+#define RST 6
 
 ESP8266WiFiMulti WiFiMulti;
 
@@ -23,13 +36,33 @@ const char* serverName = "http://192.168.0.107/controller";
 
 String skps;
 
+float z = 0;
+sensors_event_t a, g, temp;
+float vel_z;
+float cur_z;
+
+float err_z;
+
+Adafruit_MPU6050 mpu;
+
+#define TIMER_INTERVAL_MS        500   //1000
+
+ESP8266Timer ITimer;
+
+void TimerHandler()
+{
+  vel_z = g.gyro.z - err_z;
+  cur_z = vel_z*0.573;
+  z = (fabs(cur_z)>0.03)?z + (cur_z):z;
+}
+
 void setup() 
 {
   // Initializing serial interfaces
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(RST, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
+  //pinMode(RST, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
   digitalWrite(RST, HIGH);  
   Serial.println();
   Serial.print("Connecting to ");
@@ -44,20 +77,47 @@ void setup()
   
   Serial.println("");
   Serial.println("Connected to WiFi");
-  digitalWrite(LED_BUILTIN, LOW);
+  
+  mpu.enableSleep(false);
+  mpu.enableCycle(false);
+  mpu.begin();
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  Serial.println("");
+  delay(1000);
+  Serial.println("Calibrating....Do not move mpu6050");
+  mpu.getEvent(&a, &g, &temp);
+  err_z = g.gyro.z;
+  Serial.println("Done");
+  Serial.println("");
+  delay(2000);
+  pinMode(LED_BUILTIN, OUTPUT);
+  if (ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 20, TimerHandler))
+  {
+    Serial.print(F("Starting  ITimer OK, millis() = ")); Serial.println(millis());
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+  else
+    Serial.println(F("Can't set ITimer. Select another freq. or timer"));
 }
+
+#define CHECK_INTERVAL_MS     10000L
+#define CHANGE_INTERVAL_MS    20000L
 
 void loop() 
 {
   // Retrieving data from HTTP server on the NodeMCU
+  mpu.getEvent(&a, &g, &temp);
   skps = httpGETRequest(serverName);
-  if(skps == "rst") digitalWrite(RST, LOW);
-  else digitalWrite(RST, HIGH);
+  // if(skps == "rst") digitalWrite(RST, LOW);
+  // else digitalWrite(RST, HIGH);
   
   long rssi = WiFi.RSSI();
+  skps = skps + " " + String(z);
   
-  if (rssi <= 80)
-    Serial.println("val 0.00 0.00 0.00 0.00");
+  if (rssi <= -80)
+    Serial.println("val 0.00 0.00 0.00 0.00 "+String(z));
   else
     Serial.println(skps);
   

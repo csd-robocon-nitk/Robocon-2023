@@ -1,19 +1,11 @@
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-#include <Wire.h>
-
 #define LF 0x0A
 
 float z = 0;
-sensors_event_t a, g, temp;
-float err_z;
-Adafruit_MPU6050 mpu;
 
 char msg_str[100];
 char str_buff[7];
 int idx;
-String str;
-float vel_z, cur_z;
+
 
 float mat[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
@@ -24,7 +16,7 @@ public:
   int ENCA;
   int ENCB;
   int count;
-  float e;
+  float e = 0;
   float pwr = 0;
   short int dir = 0;
   float rpm_tar;
@@ -75,19 +67,6 @@ void setup() {
   Serial2.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  mpu.enableSleep(false);
-  mpu.enableCycle(false);
-  mpu.begin();
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  Serial.println("");
-  delay(1000);
-  Serial.println("Calibrating....Do not move mpu6050");
-  mpu.getEvent(&a, &g, &temp);
-  err_z = g.gyro.z;
-  Serial.println("Done");
-  Serial.println("");
 
   motors[0] = Motor(5, 4, 2, 10, 0.5, 1.5);  // Tune it
   motors[1] = Motor(7, 6, 3, 11, 0.5, 1.5);
@@ -101,68 +80,64 @@ void setup() {
 
   digitalWrite(LED_BUILTIN, 1);
 
-  cli();
-  TCCR1B |= (1 << WGM12) | (1 << CS11);
-  OCR1A = 20000;
-  TIMSK1 |= (1 << OCIE1A);
-  sei();
+
 }
 
-ISR(TIMER1_COMPA_vect) {
-  vel_z = g.gyro.z - err_z;
-  cur_z = vel_z * 0.573;
-  z = (fabs(cur_z) > 0.03) ? z + (cur_z / 10) : z;
-}
+
 
 void loop() {
-  mpu.getEvent(&a, &g, &temp);
-  while (Serial2.available()) {
-    msg_str[idx] = Serial2.read();
-    if (msg_str[idx] == LF) {
-      msg_str[idx - 1] = 0;
-      idx = 0;
-      break;
-    }
-    idx++;
-  }
-  int i = 4;
-  int j = 0;
-  int var = 1;
+  //   while (Serial2.available()) {
+  //   msg_str[idx] = Serial2.read();
+  //   if (msg_str[idx] == LF) {
+  //     msg_str[idx - 1] = 0;
+  //     idx = 0;
+  //     break;
+  //   }
+  //   idx++;
+  // }
+  // int i = 4;
+  // int j = 0;
+  // int var = 1;
   
-  if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 4) {
-      if (msg_str[i] == ' ' || msg_str[i] == 0) {
-        str_buff[j] = 0;
-        switch (var) {
-          case 1:
-            glb_vel[0] = atof(str_buff);
-            break;
-          case 2:
-            glb_vel[1] = atof(str_buff);
-            break;
-          case 3:
-            glb_vel[2] = -1 * atof(str_buff);
-            break;
-          case 4:
-            lift_sts = atof(str_buff);
-            break;
-        }
-        var++;
-        j = -1;
-      } else {
-        str_buff[j] = msg_str[i];
-      }
-      i++;
-      j++;
-    }
-  }
+  // if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
+  //   while (var <= 5) {
+  //     if (msg_str[i] == ' ' || msg_str[i] == 0) {
+  //       str_buff[j] = 0;
+  //       switch (var) {
+  //         case 1:
+  //           glb_vel[0] = atof(str_buff);
+  //           break;
+  //         case 2:
+  //           glb_vel[1] = atof(str_buff);
+  //           break;
+  //         case 3:
+  //           glb_vel[2] = -1 * atof(str_buff);
+  //           break;
+  //         case 4:
+  //           lift_sts = atof(str_buff);
+  //           break;
+  //         case 5:
+  //           z = atof(str_buff);
+  //           break;
+  //       }
+  //       var++;
+  //       j = -1;
+  //     } else {
+  //       str_buff[j] = msg_str[i];
+  //     }
+  //     i++;
+  //     j++;
+  //   }
+  // }
+  glb_vel[1] = 100;
+
   multiply();
 
-  Serial.print(motors[0].rpm_tar);
+  Serial.print(motors[0].e);
   Serial.print(" ");
-  Serial.print(motors[1].rpm_tar);
+  Serial.print(motors[1].e);
   Serial.print(" ");
-  Serial.print(motors[2].rpm_tar);
+  Serial.print(motors[2].e);
   Serial.print(" ");
   Serial.println(lift_sts);
   move_motor(&motors[0]);
@@ -172,7 +147,7 @@ void loop() {
 }
 
 void multiply() {
-  float angle = z;
+  float angle = 0;
   if (angle >= 360)
     angle = angle - 360;
   if (angle <= -360)
