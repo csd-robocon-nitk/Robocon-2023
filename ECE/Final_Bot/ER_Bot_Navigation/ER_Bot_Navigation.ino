@@ -6,7 +6,6 @@ char msg_str[100];
 char str_buff[7];
 int idx;
 
-
 float mat[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
 class Motor {
@@ -79,67 +78,63 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
 
   digitalWrite(LED_BUILTIN, 1);
-
-
 }
 
-
-
 void loop() {
-  //   while (Serial2.available()) {
-  //   msg_str[idx] = Serial2.read();
-  //   if (msg_str[idx] == LF) {
-  //     msg_str[idx - 1] = 0;
-  //     idx = 0;
-  //     break;
-  //   }
-  //   idx++;
-  // }
-  // int i = 4;
-  // int j = 0;
-  // int var = 1;
-  
-  // if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-  //   while (var <= 5) {
-  //     if (msg_str[i] == ' ' || msg_str[i] == 0) {
-  //       str_buff[j] = 0;
-  //       switch (var) {
-  //         case 1:
-  //           glb_vel[0] = atof(str_buff);
-  //           break;
-  //         case 2:
-  //           glb_vel[1] = atof(str_buff);
-  //           break;
-  //         case 3:
-  //           glb_vel[2] = -1 * atof(str_buff);
-  //           break;
-  //         case 4:
-  //           lift_sts = atof(str_buff);
-  //           break;
-  //         case 5:
-  //           z = atof(str_buff);
-  //           break;
-  //       }
-  //       var++;
-  //       j = -1;
-  //     } else {
-  //       str_buff[j] = msg_str[i];
-  //     }
-  //     i++;
-  //     j++;
-  //   }
-  // }
-  glb_vel[1] = 100;
+  while (Serial2.available()) {
+    msg_str[idx] = Serial2.read();
+    if (msg_str[idx] == LF) {
+      msg_str[idx - 1] = 0;
+      idx = 0;
+      break;
+    }
+    idx++;
+  }
+  //Serial.println(msg_str);
+  int i = 4;
+  int j = 0;
+  int var = 1;
+
+  if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
+    while (var <= 5) {
+      if (msg_str[i] == ' ' || msg_str[i] == 0) {
+        str_buff[j] = 0;
+        switch (var) {
+          case 1:
+            glb_vel[0] = atof(str_buff);
+            break;
+          case 2:
+            glb_vel[1] = atof(str_buff);
+            break;
+          case 3:
+            glb_vel[2] = -1 * atof(str_buff);
+            break;
+          case 4:
+            lift_sts = atof(str_buff);
+            break;
+          case 5:
+            z = atof(str_buff);
+            break;
+        }
+        var++;
+        j = -1;
+      } else {
+        str_buff[j] = msg_str[i];
+      }
+      i++;
+      j++;
+    }
+  }
 
   multiply();
 
-  Serial.print(motors[0].e);
+  Serial.print(motors[0].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[1].e);
+  Serial.print(motors[1].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[2].e);
+  Serial.print(motors[2].rpm_tar);
   Serial.print(" ");
-  Serial.println(lift_sts);
+  Serial.println(z);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
@@ -147,12 +142,11 @@ void loop() {
 }
 
 void multiply() {
-  float angle = 0;
+  float angle = z;
   if (angle >= 360)
     angle = angle - 360;
   if (angle <= -360)
     angle = angle + 360;
-  // Serial.println(angle);
   angle = angle * PI / 180;
   vel[0] = glb_vel[0] * cos(angle) - glb_vel[1] * sin(angle);
   vel[1] = glb_vel[0] * sin(angle) + glb_vel[1] * cos(angle);
@@ -181,7 +175,7 @@ void move_motor(Motor *m) {
     m->rpm = m->count * 3;
     m->e_int = m->e_int + (m->e * 0.2);
     m->e = m->rpm_tar - m->rpm;
-    
+
     m->pwr = m->kp * m->e + m->ki * m->e_int;
     if (m->rpm_tar == 0) {
       m->pwr = 0;
