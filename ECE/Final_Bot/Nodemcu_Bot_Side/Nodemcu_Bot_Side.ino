@@ -134,7 +134,7 @@ String httpGETRequest(const char* serverName)
   // Send HTTP GET request
   int httpResponseCode = http.GET();
 
-  String payload = "val 0.00 0.00 0.00";
+  String payload = "val 0.00 0.00 0.00 0.00";
 
   if (httpResponseCode>0)
   {
