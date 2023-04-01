@@ -47,8 +47,8 @@ public:
     pinMode(ENCB, INPUT);
     pinMode(PWM, OUTPUT);
     pinMode(DIR, OUTPUT);
-    analogWrite(PWM, (int)fabs(pwr));
-    digitalWrite(DIR, dir);
+    analogWrite(PWM, 0);
+    digitalWrite(DIR, 0);
     t_prev = millis();
   }
 };
