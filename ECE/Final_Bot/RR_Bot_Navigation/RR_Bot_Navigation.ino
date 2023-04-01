@@ -1,8 +1,8 @@
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-#include <Wire.h>
+#include "MCP4725.h"
 
 #define LF 0x0A
+
+MCP4725 MCP(0x61);
 
 char msg_str[100];
 char str_buff[7];
@@ -10,13 +10,8 @@ int idx;
 String str;
 
 float z = 0;
-sensors_event_t a, g, temp;
 
-float err_z,e_angle = 0,curr_a = 0;
-
-Adafruit_MPU6050 mpu;
-
-long int m_t_prev, m_t_curr;
+float e_angle = 0,curr_a = 0;
 
 class Motor {
 public:
@@ -41,8 +36,8 @@ public:
     pinMode(ENC, INPUT);
     pinMode(PWM, OUTPUT);
     pinMode(DIR, OUTPUT);
-    analogWrite(PWM, (int)fabs(pwr));
-    digitalWrite(DIR, dir);
+    digitalWrite(PWM, 0);
+    digitalWrite(DIR, 0);
     t_prev = millis();
   }
 };
@@ -56,32 +51,17 @@ float vel[3] = { 0, 0, 0 };
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
+  MCP.begin();
   pinMode(LED_BUILTIN, OUTPUT);
 
-  mpu.enableSleep(false);
-  mpu.enableCycle(false);
-  mpu.begin();
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  Serial.println("");
-  delay(1000);
-  Serial.println("Calibrating....Do not move mpu6050");
-  mpu.getEvent(&a, &g, &temp);
-  err_z = g.gyro.z;
-  Serial.println("Done");
-  Serial.println("");
-
-  motors[0] = Motor(5, 4, 2);
-  motors[1] = Motor(7, 6, 3);
-  motors[2] = Motor(9, 8, 18);
+  motors[0] = Motor(33, 4, 2);
+  motors[1] = Motor(38, 6, 3);
+  motors[2] = Motor(39, 8, 18);
 
   attachInterrupt(digitalPinToInterrupt(motors[0].ENC), update_motor_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENC), update_motor_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENC), update_motor_2, RISING);
   digitalWrite(LED_BUILTIN, 1);
-
-  m_t_prev = millis();
 }
 
 void loop() {
@@ -98,7 +78,7 @@ void loop() {
   int j = 0;
   int var = 1;
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 3) {
+    while (var <= 5) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
         str_buff[j] = 0;
         switch (var) {
@@ -110,6 +90,11 @@ void loop() {
             break;
           case 3:
             vel[2] = -1*atof(str_buff);
+            break;
+          case 4:
+            break;
+          case 5:
+            z = atof(str_buff);
             break;
         }
         var++;
@@ -126,21 +111,24 @@ void loop() {
   Serial.print(" ");
   Serial.print(motors[1].rpm);
   Serial.print(" ");
-  Serial.println(motors[2].rpm);
+  Serial.print(motors[2].rpm);
+  Serial.print(" ");
+  Serial.println(z);
+  digitalWrite(motors[0].PWM, HIGH);
+  digitalWrite(motors[1].PWM, LOW);
+  digitalWrite(motors[2].PWM, LOW);
   move_motor(&motors[0]);
+  digitalWrite(motors[0].PWM, LOW);
+  digitalWrite(motors[1].PWM, HIGH);
+  digitalWrite(motors[2].PWM, LOW);
   move_motor(&motors[1]);
+  digitalWrite(motors[0].PWM, LOW);
+  digitalWrite(motors[1].PWM, LOW);
+  digitalWrite(motors[2].PWM, HIGH);
   move_motor(&motors[2]);
-  //Serial.println();
 }
 
 void multiply() {
-  m_t_curr = millis();
-  if(m_t_curr-m_t_prev>=10){
-    mpu.getEvent(&a, &g, &temp);
-    float vel_z = g.gyro.z  - err_z;  
-    float cur_z = vel_z*0.573;
-    z = (cur_z>=0.03 || cur_z<=-0.03)?(z + cur_z*1.36):z;
-  }
   if(vel[2]==0){
     e_angle = curr_a - z;
     vel[2] = e_angle*2;
@@ -160,6 +148,11 @@ void move_motor(Motor *m) {
     m->e = abs(m->rpm_tar) - m->rpm;
     m->e_int = m->e_int + (m->e * 0.2);
     m->pwr = m->pwr + 0.05*m->e;// 1*m->e_int;
+    if (m->rpm_tar == 0) {
+      m->pwr = 0;
+      m->e = 0;
+      m->e_int = 0;
+    }
     m->count = 0;
     m->t_prev = millis();
   }
@@ -169,7 +162,7 @@ void move_motor(Motor *m) {
     m->dir = 1;
   } 
   digitalWrite(m->DIR, m->dir);
-  analogWrite(m->PWM, (int)fabs(m->pwr));
+  MCP.setValue((int)(fabs(m->pwr)*4096/255));
 }
 
 void update_motor_0(){
