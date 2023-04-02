@@ -15,7 +15,7 @@ float errorD= 0, integral =0, derivative=0, output=0, previousErrorD=0;
 float KpD = 0.7, KiD = 0.4 ,KdD = 0.06;
 
 float errorw= 0, integralw =0, derivativew=0, outputw=0, previousErrorw=0;
-float Kpw = 0.7, Kiw = 0.4 ,Kdw = 0.06;
+float Kpw = 0.5, Kiw = 0.2 ,Kdw = 0;
 
 char msg_str[100];
 char str_buff[7];
@@ -102,6 +102,7 @@ float glb_vel[3] = { 0, 0, 0 };
 float lift_sts = 0;
 
 void setup() {
+  delay(20000);
   Serial.begin(115200);
   Serial2.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -118,15 +119,15 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
 
   digitalWrite(LED_BUILTIN, 1);
-
+  
 
 }
 
 float pid_distance(int distance){
   if (distance - INPUT_DISTANCE >2 || distance - INPUT_DISTANCE <-2){
-   Serial.print("Error ");
+   //Serial.print("Error ");
    errorD = INPUT_DISTANCE - distance;
-   Serial.print( errorD);
+   //Serial.print( errorD);
    integral = integral + errorD * 0.01;
    derivative = (errorD - previousErrorD);
    output = KpD*errorD + KiD*integral + KdD*derivative;
@@ -146,14 +147,14 @@ float pid_distance(int distance){
   {
     output = -100;
   }
-  Serial.print("Output ");
-  Serial.print(output);
+  //Serial.print("Output ");
+  //Serial.print(output);
   
   return output;
 }
 
 float pid_angle(int angle){
-   if(z>5 || z<-5){
+   if(z>3 || z<-3){
     errorw = -angle;
    integralw = integralw + errorw * 0.01;
    derivativew = (errorw - previousErrorw);
@@ -164,76 +165,75 @@ float pid_angle(int angle){
   errorw=0;
   integralw = 0;
   derivativew = 0;
-  outputw
-  = 0;
+  outputw = 0;
   }
+  return outputw;
   }
 
 void loop() {
-  //   while (Serial2.available()) {
-  //   msg_str[idx] = Serial2.read();
-  //   if (msg_str[idx] == LF) {
-  //     msg_str[idx - 1] = 0;
-  //     idx = 0;
-  //     break;
-  //   }
-  //   idx++;
-  // }
-  // int i = 4;
-  // int j = 0;
-  // int var = 1;
+     while (Serial2.available()) {
+     msg_str[idx] = Serial2.read();
+     if (msg_str[idx] == LF) {
+       msg_str[idx - 1] = 0;
+       idx = 0;
+       break;
+     }
+     idx++;
+   }
+   //Serial.println(msg_str);
+   int i = 4;
+   int j = 0;
+   int var = 1;
+     if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
+     while (var <= 5) {
+       if (msg_str[i] == ' ' || msg_str[i] == 0) {
+         str_buff[j] = 0;
+         switch (var) {
+           case 1:
+             glb_vel[0] = atof(str_buff);
+             break;
+           case 2:
+             glb_vel[1] = atof(str_buff);
+             break;
+           case 3:
+             glb_vel[2] = -1 * atof(str_buff);
+             break;
+           case 4:
+             lift_sts = atof(str_buff);
+             break;
+           case 5:
+             z = atof(str_buff);
+             break;
+         }
+         var++;
+         j = -1;
+       } else {
+         str_buff[j] = msg_str[i];
+       }
+       i++;
+       j++;
+     }
+  }
   
-  // if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-  //   while (var <= 5) {
-  //     if (msg_str[i] == ' ' || msg_str[i] == 0) {
-  //       str_buff[j] = 0;
-  //       switch (var) {
-  //         case 1:
-  //           glb_vel[0] = atof(str_buff);
-  //           break;
-  //         case 2:
-  //           glb_vel[1] = atof(str_buff);
-  //           break;
-  //         case 3:
-  //           glb_vel[2] = -1 * atof(str_buff);
-  //           break;
-  //         case 4:
-  //           lift_sts = atof(str_buff);
-  //           break;
-  //         case 5:
-  //           z = atof(str_buff);
-  //           break;
-  //       }
-  //       var++;
-  //       j = -1;
-  //     } else {
-  //       str_buff[j] = msg_str[i];
-  //     }
-  //     i++;
-  //     j++;
-  //   }
-  // }
-  
-  glb_vel[1] = 100;
+  glb_vel[1] = 0;
   dist_read = ultrasonic.MeasureInCentimeters();
-  glb_vel[0] = pid_distance(dist_read);
+  glb_vel[0] = 0; //pid_distance(dist_read);
   multiply();
-  z=0;  
-  Serial.print(motors[0].e);
+  Serial.print(motors[0].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[1].e);
+  Serial.print(motors[1].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[2].e);
+  Serial.print(motors[2].rpm_tar);
   Serial.print(" ");
-  Serial.println(lift_sts);
+  Serial.println(z);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
-  pick(&lift, lift_sts);
+  //pick(&lift, lift_sts);
 }
 
 void multiply() {
-  float angle = z;
+  float angle = 0;
   if (angle >= 360)
     angle = angle - 360;
   if (angle <= -360)
@@ -242,7 +242,7 @@ void multiply() {
   angle = angle * PI / 180;
   vel[0] = glb_vel[0] * cos(angle) - glb_vel[1] * sin(angle);
   vel[1] = glb_vel[0] * sin(angle) + glb_vel[1] * cos(angle);
-  vel[2] = glb_vel[2];
+  vel[2] = pid_angle(z);
   motors[0].rpm_tar = (mat[0][0] * vel[0] + mat[0][1] * vel[1] + mat[0][2] * vel[2]);
   motors[1].rpm_tar = (mat[1][0] * vel[0] + mat[1][1] * vel[1] + mat[1][2] * vel[2]);
   motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
