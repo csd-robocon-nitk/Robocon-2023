@@ -65,53 +65,54 @@ void setup() {
 }
 
 void loop() {
-  while (Serial2.available()) {
-    msg_str[idx] = Serial2.read();
-    if (msg_str[idx] == LF) {
-      msg_str[idx - 1] = 0;
-      idx = 0;
-      break;
-    }
-    idx++;
-  }
-  int i = 4;
-  int j = 0;
-  int var = 1;
-  if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 5) {
-      if (msg_str[i] == ' ' || msg_str[i] == 0) {
-        str_buff[j] = 0;
-        switch (var) {
-          case 1:
-            vel[0] = -1*atof(str_buff);
-            break;
-          case 2:
-            vel[1] = -1*atof(str_buff);
-            break;
-          case 3:
-            vel[2] = -1*atof(str_buff);
-            break;
-          case 4:
-            break;
-          case 5:
-            z = atof(str_buff);
-            break;
-        }
-        var++;
-        j = -1;
-      } else {
-        str_buff[j] = msg_str[i];
-      }
-      i++;
-      j++;
-    }
-  }
+  // while (Serial2.available()) {
+  //   msg_str[idx] = Serial2.read();
+  //   if (msg_str[idx] == LF) {
+  //     msg_str[idx - 1] = 0;
+  //     idx = 0;
+  //     break;
+  //   }
+  //   idx++;
+  // }
+  // int i = 4;
+  // int j = 0;
+  // int var = 1;
+  // if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
+  //   while (var <= 5) {
+  //     if (msg_str[i] == ' ' || msg_str[i] == 0) {
+  //       str_buff[j] = 0;
+  //       switch (var) {
+  //         case 1:
+  //           vel[0] = -1*atof(str_buff);
+  //           break;
+  //         case 2:
+  //           vel[1] = -1*atof(str_buff);
+  //           break;
+  //         case 3:
+  //           vel[2] = -1*atof(str_buff);
+  //           break;
+  //         case 4:
+  //           break;
+  //         case 5:
+  //           z = atof(str_buff);
+  //           break;
+  //       }
+  //       var++;
+  //       j = -1;
+  //     } else {
+  //       str_buff[j] = msg_str[i];
+  //     }
+  //     i++;
+  //     j++;
+  //   }
+  // }
+  vel[0] = 100;
   multiply();
-  Serial.print(motors[0].rpm);
+  Serial.print(motors[0].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[1].rpm);
+  Serial.print(motors[1].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[2].rpm);
+  Serial.print(motors[2].rpm_tar);
   Serial.print(" ");
   Serial.println(z);
   digitalWrite(motors[0].PWM, HIGH);
@@ -142,20 +143,21 @@ void multiply() {
 }
 
 void move_motor(Motor *m) {
-  m->t_curr = millis();
-  if (m->t_curr - m->t_prev >= 200) {
-    m->rpm = m->count * 10;
-    m->e = abs(m->rpm_tar) - m->rpm;
-    m->e_int = m->e_int + (m->e * 0.2);
-    m->pwr = m->pwr + 0.05*m->e;// 1*m->e_int;
-    if (m->rpm_tar == 0) {
-      m->pwr = 0;
-      m->e = 0;
-      m->e_int = 0;
-    }
-    m->count = 0;
-    m->t_prev = millis();
-  }
+  // m->t_curr = millis();
+  // if (m->t_curr - m->t_prev >= 200) {
+  //   m->rpm = m->count * 10;
+  //   m->e = abs(m->rpm_tar) - m->rpm;
+  //   m->e_int = m->e_int + (m->e * 0.2);
+  //   m->pwr = m->pwr + 0.05*m->e;// 1*m->e_int;
+  //   if (m->rpm_tar == 0) {
+  //     m->pwr = 0;
+  //     m->e = 0;
+  //     m->e_int = 0;
+  //   }
+  //   m->count = 0;
+  //   m->t_prev = millis();
+  // }
+  m->pwr = map(m->rpm_tar, -200, 200, -255, 255);
   if (m->rpm_tar > 0) {
     m->dir = 0;
   } else if (m->rpm_tar < 0) {

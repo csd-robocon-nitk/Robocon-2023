@@ -23,7 +23,7 @@
 #include <WiFiClient.h>
 #include <ESP8266WiFiMulti.h>
 
-#define RST 6
+#define RST 12
 
 ESP8266WiFiMulti WiFiMulti;
 
@@ -61,7 +61,7 @@ void setup()
   // Initializing serial interfaces
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  //pinMode(RST, OUTPUT);
+  pinMode(RST, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   digitalWrite(RST, HIGH);  
   Serial.println();
@@ -110,8 +110,13 @@ void loop()
   // Retrieving data from HTTP server on the NodeMCU
   mpu.getEvent(&a, &g, &temp);
   skps = httpGETRequest(serverName);
-  // if(skps == "rst") digitalWrite(RST, LOW);
-  // else digitalWrite(RST, HIGH);
+  if(skps == "rst") 
+    digitalWrite(RST, LOW);
+  else 
+    digitalWrite(RST, HIGH);
+  
+  if(skps == "rstmpu")
+    z = 0;
   
   long rssi = WiFi.RSSI();
   skps = skps + " " + String(z);
@@ -138,15 +143,7 @@ String httpGETRequest(const char* serverName)
 
   if (httpResponseCode>0)
   {
-//    Serial.print("HTTP Response code: ");
-//    Serial.println(httpResponseCode);
     payload = http.getString();
-  }
-
-  else
-  {
-//    Serial.print("Error code: ");
-//    Serial.println(httpResponseCode);
   }
   http.end();
 
