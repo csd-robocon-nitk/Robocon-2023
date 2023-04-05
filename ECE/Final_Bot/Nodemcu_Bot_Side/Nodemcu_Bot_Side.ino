@@ -121,10 +121,10 @@ void loop()
   long rssi = WiFi.RSSI();
   skps = skps + " " + String(z);
   
-  if (rssi <= -80)*/
-  Serial.println("val 0.00 0.00 0.00 0.00 "+String(z));
-  /*else
-    Serial.println(skps);*/
+  if (rssi <= -80)
+    Serial.println("val 0.00 0.00 0.00 0 0 0 0 0"+String(z));
+  else
+    Serial.println(skps);
   
 }
 
@@ -139,7 +139,7 @@ String httpGETRequest(const char* serverName)
   // Send HTTP GET request
   int httpResponseCode = http.GET();
 
-  String payload = "val 0.00 0.00 0.00 0.00";
+  String payload = "val 0.00 0.00 0.00 0 0 0 0 0";
 
   if (httpResponseCode>0)
   {
