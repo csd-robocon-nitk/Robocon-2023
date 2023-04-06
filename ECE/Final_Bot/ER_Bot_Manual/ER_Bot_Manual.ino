@@ -74,7 +74,7 @@ void setup() {
   motors[2] = Motor(9, 8, 18, 12, 0.5, 1.5);
 
   tilt = Motor(8, 22);
-  stepper = Motor(45,43);
+  stepper = Motor(45, 43);
 
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
@@ -99,7 +99,7 @@ void loop() {
   int var = 1;
 
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 9 ) {
+    while (var <= 9) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
         str_buff[j] = 0;
         switch (var) {
@@ -147,6 +147,8 @@ void loop() {
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
+  run_motor(&stepper, pow);
+  run_motor(&tilt, tilt_sts);
 }
 
 void multiply() {
@@ -164,14 +166,14 @@ void multiply() {
   motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
 }
 
-void tilt(Motor *m, int sts) {
-  int pwm;
-  if (sts == 0) pwm = 0;
+void run_motor(Motor *m, int sts) {
+  if (sts == 0)
+    m->pwr = 0;
   else if (sts == 1) {
-    pwm = 1;
+    m->pwr = 1;
     digitalWrite(m->DIR, 0);
   } else if (sts == -1) {
-    pwm = 1;
+    m->pwr = 1;
     digitalWrite(m->DIR, 1);
   }
   digitalWrite(m->PWM, pwm);

@@ -64,7 +64,7 @@ void setup()
   pinMode(RST, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   digitalWrite(RST, HIGH);  
-  /*Serial.println();
+  Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
   // Connecting to WiFi
@@ -76,7 +76,7 @@ void setup()
   }
   
   Serial.println("");
-  Serial.println("Connected to WiFi");*/
+  Serial.println("Connected to WiFi");
   
   mpu.enableSleep(false);
   mpu.enableCycle(false);
