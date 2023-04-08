@@ -32,7 +32,7 @@ const char* ssid = "CRN";
 const char* password = "robocon2k23";
 
 //Your IP address or domain name with URL path(refer to the nodemcu code on remote controller side for the IP address)
-const char* serverName = "http://192.168.0.107/controller";
+const char* serverName = "http://192.168.0.101/controller";
 
 String skps;
 

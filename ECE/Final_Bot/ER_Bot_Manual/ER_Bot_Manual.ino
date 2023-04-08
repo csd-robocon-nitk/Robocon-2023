@@ -1,6 +1,17 @@
+#include <TimerOne.h>
+#include <Servo.h>
+Servo myservo;
+
+byte state = 0;
+int red_tim = 400;
+
 #define LF 0x0A
 
 float z = 0;
+int curr_state=0;
+int prev_state=0;
+int s_angle=0; // the angle of servo
+
 
 char msg_str[100];
 char str_buff[7];
@@ -60,27 +71,55 @@ float vel[3] = { 0, 0, 0 };
 float glb_vel[3] = { 0, 0, 0 };
 
 int tilt_sts = 0;
-int pow = 0;
+int step_pow = 0;
 int shoot = 0;
+
+void run_stepper() {
+  if (step_pow == 0) {
+    digitalWrite(stepper.PWM, 0);
+    digitalWrite(stepper.PWM, 0);
+  } else {
+    digitalWrite(stepper.PWM, 0);
+    digitalWrite(stepper.PWM, 1);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
+  myservo.attach(44); //attach servo to pin 44
+  myservo.write(s_angle); // default angle 0 everytime arduino is reset. Kind off like a dummy variable
 
+  motors[0] = Motor(5, 27, 2, 10, 0.5, 1.5);  // Tune it
+  motors[1] = Motor(7, 25, 3, 11, 0.5, 1.5);
+  motors[2] = Motor(8, 23, 18, 12, 0.5, 1.5);
 
-  motors[0] = Motor(5, 4, 2, 10, 0.5, 1.5);  // Tune it
-  motors[1] = Motor(7, 6, 3, 11, 0.5, 1.5);
-  motors[2] = Motor(9, 8, 18, 12, 0.5, 1.5);
-
-  tilt = Motor(8, 22);
+  tilt = Motor(9, 22);
   stepper = Motor(45, 43);
 
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
-
+  Timer1.initialize(400);
+  Timer1.attachInterrupt(run_stepper);
   digitalWrite(LED_BUILTIN, 1);
+}
+
+
+void move_stepper() {
+  if (step_pow != 0) {
+    if (step_pow == -1) {
+      digitalWrite(stepper.DIR, 0);
+    } else if (step_pow == 1) {
+      digitalWrite(stepper.DIR, 1);
+    }
+    while (red_tim > 200) {
+      delay(100);
+      Timer1.setPeriod(red_tim);
+      red_tim = red_tim - 20;
+    }
+  }
 }
 
 void loop() {
@@ -93,7 +132,7 @@ void loop() {
     }
     idx++;
   }
-  //Serial.println(msg_str);
+  // Serial.println(msg_str);
   int i = 4;
   int j = 0;
   int var = 1;
@@ -116,7 +155,7 @@ void loop() {
             tilt_sts = atoi(str_buff);
             break;
           case 7:
-            pow = atoi(str_buff);
+            step_pow = atoi(str_buff);
             break;
           case 8:
             shoot = atoi(str_buff);
@@ -137,18 +176,19 @@ void loop() {
 
   multiply();
 
-  Serial.print(motors[0].rpm_tar);
+  Serial.print(motors[0].rpm);
   Serial.print(" ");
-  Serial.print(motors[1].rpm_tar);
+  Serial.print(motors[1].rpm);
   Serial.print(" ");
-  Serial.print(motors[2].rpm_tar);
+  Serial.print(motors[2].rpm);
   Serial.print(" ");
   Serial.println(z);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
-  run_motor(&stepper, pow);
   run_motor(&tilt, tilt_sts);
+  shooter();
+  move_stepper();
 }
 
 void multiply() {
@@ -166,7 +206,7 @@ void multiply() {
   motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
 }
 
-void run_motor(Motor *m, int sts) {
+void run_motor(Motor* m, int sts) {
   if (sts == 0)
     m->pwr = 0;
   else if (sts == 1) {
@@ -176,10 +216,10 @@ void run_motor(Motor *m, int sts) {
     m->pwr = 1;
     digitalWrite(m->DIR, 1);
   }
-  digitalWrite(m->PWM, pwm);
+  digitalWrite(m->PWM, m->pwr);
 }
 
-void move_motor(Motor *m) {
+void move_motor(Motor* m) {
   m->t_curr = millis();
   if (m->t_curr - m->t_prev >= 200) {
     m->rpm = m->count * 3;
@@ -226,4 +266,20 @@ void update_count_2() {
   } else {
     motors[2].count--;
   }
+}
+
+void shooter() // when controller pressed, the servo must go to 45 and remain there even after removing the hand.
+{
+  curr_state = shoot;
+  // declare a preset angle at 0. Toggle it between 0 and 45 everytime the button is pressed.
+  if (curr_state==1 && prev_state==0)
+  {
+    if (s_angle==0)
+    {
+      s_angle=45;
+    }
+    else {s_angle=0;}
+    myservo.write(s_angle);
+  }
+  prev_state=curr_state;
 }
