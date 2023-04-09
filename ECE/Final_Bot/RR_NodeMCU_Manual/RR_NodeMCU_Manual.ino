@@ -15,13 +15,13 @@ int lift_lmt_u = 10;
 int lift_lmt_d = 9;
 
 int lift_sts;
-int reload_trgr;
+int reload_trgr, prev_reload_trgr;
 
 
 
 void setup() {
   // put your setup code here, to run once:
-
+  prev_reload_trgr = 0;
   pinMode(gantry_pwm, OUTPUT);
   pinMode(gantry_dir, OUTPUT);
   pinMode(lift_dir, OUTPUT);
@@ -71,7 +71,7 @@ void loop() {
       j++;
     }
   }
-  if (reload_trgr == 1) {
+  if (reload_trgr == 1 && prev_reload_trgr != reload_trgr) {
     while (digitalRead(gantry_lmt_l)) {
       digitalWrite(gantry_dir, 1);
       digitalWrite(gantry_pwm, 1);
@@ -90,11 +90,16 @@ void loop() {
       delay(1);
     }
     digitalWrite(gantry_pwm, 0);
+    digitalWrite(lift_dir, 1);
+    digitalWrite(lift_pwm, 1);
+    delay(250);
+    digitalWrite(lift_pwm, 0);
     while (digitalRead(gantry_lmt_l)) {
       digitalWrite(gantry_dir, 1);
       digitalWrite(gantry_pwm, 1);
       delay(1);
     }
+
     digitalWrite(gantry_pwm, 0);
     while (digitalRead(lift_lmt_u)) {
       digitalWrite(lift_dir, 0);
@@ -102,9 +107,9 @@ void loop() {
       delay(1);
     }
     digitalWrite(lift_pwm, 0);
-    reload_trgr = 0;
     delay(300);
   }
+  prev_reload_trgr = reload_trgr;
   if(lift_sts != 0)
   {
     if(lift_sts == 1)
