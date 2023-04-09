@@ -6,10 +6,6 @@
 const char* ssid = "CRN";
 const char* password = "robocon2k23";
 
-IPAddress IP(192, 168, 0, 102);
-IPAddress gateway(192, 168, 0, 1);
-IPAddress subnet(255, 255, 255, 0);
-
 #define PS2_DAT D7
 #define PS2_CMD D6
 #define PS2_SEL D8
@@ -75,6 +71,7 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
+  IPAddress IP = WiFi.localIP();
   Serial.print("Connected ");
   digitalWrite(LED_BUILTIN, LOW);
   Serial.print("AP IP address: ");

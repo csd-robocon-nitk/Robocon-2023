@@ -23,7 +23,7 @@
 #include <WiFiClient.h>
 #include <ESP8266WiFiMulti.h>
 
-#define RST 12
+#define rst_pin 13
 
 ESP8266WiFiMulti WiFiMulti;
 
@@ -32,7 +32,7 @@ const char* ssid = "CRN";
 const char* password = "robocon2k23";
 
 //Your IP address or domain name with URL path(refer to the nodemcu code on remote controller side for the IP address)
-const char* serverName = "http://192.168.0.101/controller";
+const char* serverName = "http://192.168.0.107/controller";
 
 String skps;
 
@@ -61,9 +61,9 @@ void setup()
   // Initializing serial interfaces
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(RST, OUTPUT);
+  pinMode(rst_pin, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-  digitalWrite(RST, HIGH);  
+  digitalWrite(rst_pin, 1);  
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -111,9 +111,9 @@ void loop()
   mpu.getEvent(&a, &g, &temp);
   skps = httpGETRequest(serverName);
   if(skps == "rst") 
-    digitalWrite(RST, LOW);
+    digitalWrite(rst_pin, LOW);
   else 
-    digitalWrite(RST, HIGH);
+    digitalWrite(rst_pin, HIGH);
   
   if(skps == "rstmpu")
     z = 0;
