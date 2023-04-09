@@ -23,7 +23,7 @@
 #include <WiFiClient.h>
 #include <ESP8266WiFiMulti.h>
 
-#define RST 12
+#define RST 13
 
 ESP8266WiFiMulti WiFiMulti;
 
@@ -32,7 +32,7 @@ const char* ssid = "CRN";
 const char* password = "robocon2k23";
 
 //Your IP address or domain name with URL path(refer to the nodemcu code on remote controller side for the IP address)
-const char* serverName = "http://192.168.0.102/controller";
+const char* serverName = "http://192.168.0.146/controller";
 
 String skps;
 
