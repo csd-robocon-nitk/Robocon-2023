@@ -1,16 +1,16 @@
 #include <TimerOne.h>
 #include <Servo.h>
-Servo myservo;
+Servo latch, place;
 
 byte state = 0;
-int red_tim = 400;
+int red_tim = 200;
 
 #define LF 0x0A
 
 float z = 0;
 int curr_state=0;
 int prev_state=0;
-int s_angle=0; // the angle of servo
+int l_angle=0; // the angle of servo
 
 
 char msg_str[100];
@@ -87,9 +87,11 @@ void run_stepper() {
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
-  pinMode(LED_BUILTIN, OUTPUT);
-  myservo.attach(44); //attach servo to pin 44
-  myservo.write(s_angle); // default angle 0 everytime arduino is reset. Kind off like a dummy variable
+  latch.attach(44); //attach servo to pin 44
+  place.attach(13);
+  
+  latch.write(l_angle); // default angle 0 everytime arduino is reset. Kind off like a dummy variable
+  place.write(180);
 
   motors[0] = Motor(5, 27, 2, 10, 0.5, 1.5);  // Tune it
   motors[1] = Motor(7, 25, 3, 11, 0.5, 1.5);
@@ -101,9 +103,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
-  Timer1.initialize(400);
+  Timer1.initialize(200);
   Timer1.attachInterrupt(run_stepper);
-  digitalWrite(LED_BUILTIN, 1);
 }
 
 
@@ -111,14 +112,15 @@ void move_stepper() {
   if (step_pow != 0) {
     if (step_pow == -1) {
       digitalWrite(stepper.DIR, 0);
+      place.write(0);
     } else if (step_pow == 1) {
       digitalWrite(stepper.DIR, 1);
     }
-    while (red_tim > 200) {
-      delay(100);
-      Timer1.setPeriod(red_tim);
-      red_tim = red_tim - 20;
-    }
+    // while (red_tim > 200) {
+    //   Timer1.setPeriod(red_tim);
+    //   delay(100);
+    //   red_tim = red_tim - 10;
+    // }
   }
 }
 
@@ -274,12 +276,14 @@ void shooter() // when controller pressed, the servo must go to 45 and remain th
   // declare a preset angle at 0. Toggle it between 0 and 45 everytime the button is pressed.
   if (curr_state==1 && prev_state==0)
   {
-    if (s_angle==0)
+    if (l_angle==0)
     {
-      s_angle=45;
+      l_angle=45;
     }
-    else {s_angle=0;}
-    myservo.write(s_angle);
+    else {l_angle=0;}
+    place.write(180);
+    delay(1000);
+    latch.write(l_angle);
   }
   prev_state=curr_state;
 }
