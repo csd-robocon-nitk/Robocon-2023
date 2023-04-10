@@ -2,6 +2,10 @@
 
 #define LF 0x0A
 
+#include <Servo.h>
+
+Servo ESC;
+
 MCP4725 MCP(0x61);
 
 char msg_str[100];
@@ -66,6 +70,20 @@ void setup() {
   MCP.begin();
   pinMode(LED_BUILTIN, OUTPUT);
 
+
+ESC.attach(9,1000,2000);
+  //Calibration
+  ESC.write(180);
+  delay(5000);
+  ESC.write(0);
+  delay(5000);
+  // Serial.begin(115200);
+
+// pins need to be decided  
+  pinMode(2,INPUT_PULLUP);
+  pinMode(3,INPUT_PULLUP);
+  ESC.write(0);  
+
   motors[0] = Motor(33, 29, 31);
   motors[1] = Motor(38, 34, 36);
   motors[2] = Motor(39, 35, 37);
@@ -76,6 +94,30 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(motors[1].ENC), update_motor_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENC), update_motor_2, RISING);
   digitalWrite(LED_BUILTIN, 1);
+}
+
+int bldc_pow=0;
+float bldc_speed=0.0;
+
+void move_bldc() {
+  if(bldc_pow!=0)
+  {
+    if(bldc_pow==1)
+    {
+      if(bldc_speed<175)
+      {
+        bldc_speed=bldc_speed+0.1;
+        ESC.write((int)bldc_speed);
+      } 
+    }
+    else {        
+      if(bldc_speed>3)
+      {
+        bldc_speed=bldc_speed-0.1;
+        ESC.write((int)bldc_speed);        
+      }              
+    }
+  }
 }
 
 void loop() {
@@ -107,6 +149,10 @@ void loop() {
             break;
           case 5:
             tilt_sts = atoi(str_buff);
+            break;
+          case 7:
+            bldc_pow = atoi(str_buff);
+            break;                          
           case 9:
             z = atof(str_buff);
             break;
@@ -142,7 +188,9 @@ void loop() {
   digitalWrite(motors[2].PWM, HIGH);
   move_motor(&motors[2]);
   run_motor(&tilt, tilt_sts);
+  move_bldc();  
 }
+
 
 void multiply() {
   if(vel[2]==0){
