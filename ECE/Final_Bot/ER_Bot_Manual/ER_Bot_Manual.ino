@@ -16,6 +16,7 @@ int l_angle=0; // the angle of servo
 char msg_str[100];
 char str_buff[7];
 int idx;
+unsigned long release = 0;
 
 float mat[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
@@ -78,9 +79,13 @@ void run_stepper() {
   if (step_pow == 0) {
     digitalWrite(stepper.PWM, 0);
     digitalWrite(stepper.PWM, 0);
-  } else {
+  } else if(digitalRead(20)==1 || stepper.DIR==1) {
     digitalWrite(stepper.PWM, 0);
     digitalWrite(stepper.PWM, 1);
+  }
+  else {
+    digitalWrite(stepper.PWM, 0);
+    digitalWrite(stepper.PWM, 0);
   }
 }
 
@@ -103,8 +108,9 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
-  Timer1.initialize(200);
+  Timer1.initialize(400);
   Timer1.attachInterrupt(run_stepper);
+  pinMode(20, INPUT_PULLUP);
 }
 
 
@@ -112,15 +118,16 @@ void move_stepper() {
   if (step_pow != 0) {
     if (step_pow == -1) {
       digitalWrite(stepper.DIR, 0);
-      place.write(0);
+      release++;
+      Serial.println(release);
+      if(release==5000){
+        Serial.println("Set");
+        place.write(180);
+        release = 0;
+      }
     } else if (step_pow == 1) {
       digitalWrite(stepper.DIR, 1);
     }
-    // while (red_tim > 200) {
-    //   Timer1.setPeriod(red_tim);
-    //   delay(100);
-    //   red_tim = red_tim - 10;
-    // }
   }
 }
 
@@ -178,13 +185,13 @@ void loop() {
 
   multiply();
 
-  Serial.print(motors[0].rpm);
-  Serial.print(" ");
-  Serial.print(motors[1].rpm);
-  Serial.print(" ");
-  Serial.print(motors[2].rpm);
-  Serial.print(" ");
-  Serial.println(z);
+  // Serial.print(motors[0].rpm);
+  // Serial.print(" ");
+  // Serial.print(motors[1].rpm);
+  // Serial.print(" ");
+  // Serial.print(motors[2].rpm);
+  // Serial.print(" ");
+  // Serial.println(z);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
@@ -278,11 +285,18 @@ void shooter() // when controller pressed, the servo must go to 45 and remain th
   {
     if (l_angle==0)
     {
-      l_angle=45;
+      l_angle=45;  
+      place.write(50); 
+      delay(1000); 
+      place.write(120);
+      delay(500);
+      place.write(50);    
     }
-    else {l_angle=0;}
-    place.write(180);
-    delay(1000);
+    else {
+      l_angle=0;
+      place.write(180);
+      delay(1000);
+    }
     latch.write(l_angle);
   }
   prev_state=curr_state;

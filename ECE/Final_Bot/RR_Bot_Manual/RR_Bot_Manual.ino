@@ -57,7 +57,7 @@ public:
 
 Motor motors[3];
 
-float mat[3][3] = { { 0, -2, -0.8 }, { 1.1547, 1, -0.8 }, { -1.1547, 1, -0.8 } };
+float mat[3][3] = { { 0, -2, -1 }, { 1.1547, 1, -1 }, { -1.1547, 1, -1 } };
 
 float vel[3] = { 0, 0, 0 };
 
@@ -71,28 +71,41 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
 
-ESC.attach(9,1000,2000);
+  ESC.attach(9,1000,2000);
   //Calibration
-  ESC.write(180);
-  delay(5000);
-  ESC.write(0);
-  delay(5000);
+  // ESC.write(180);
+  // delay(5000);
+  // ESC.write(0);
+  // delay(5000);
   // Serial.begin(115200);
 
-// pins need to be decided  
-  pinMode(2,INPUT_PULLUP);
-  pinMode(3,INPUT_PULLUP);
-  ESC.write(0);  
+  //ESC.write(0);  
 
   motors[0] = Motor(33, 29, 31);
   motors[1] = Motor(38, 34, 36);
   motors[2] = Motor(39, 35, 37);
 
+  digitalWrite(motors[0].PWM, HIGH);
+  digitalWrite(motors[1].PWM, LOW);
+  digitalWrite(motors[2].PWM, LOW);
+  MCP.setValue(0);  
+  digitalWrite(motors[0].PWM, LOW);
+  digitalWrite(motors[1].PWM, HIGH);
+  digitalWrite(motors[2].PWM, LOW);
+  MCP.setValue(0);  
+  digitalWrite(motors[0].PWM, LOW);
+  digitalWrite(motors[1].PWM, LOW);
+  digitalWrite(motors[2].PWM, HIGH);
+  MCP.setValue(0); 
+  digitalWrite(motors[0].PWM, LOW);
+  digitalWrite(motors[1].PWM, LOW);
+  digitalWrite(motors[2].PWM, LOW);
+
   tilt = Motor(7, 40);
 
-  attachInterrupt(digitalPinToInterrupt(motors[0].ENC), update_motor_0, RISING);
-  attachInterrupt(digitalPinToInterrupt(motors[1].ENC), update_motor_1, RISING);
-  attachInterrupt(digitalPinToInterrupt(motors[2].ENC), update_motor_2, RISING);
+  // attachInterrupt(digitalPinToInterrupt(motors[0].ENC), update_motor_0, RISING);
+  // attachInterrupt(digitalPinToInterrupt(motors[1].ENC), update_motor_1, RISING);
+  // attachInterrupt(digitalPinToInterrupt(motors[2].ENC), update_motor_2, RISING);
   digitalWrite(LED_BUILTIN, 1);
 }
 
@@ -130,6 +143,7 @@ void loop() {
     }
     idx++;
   }
+  // Serial.println(msg_str);
   int i = 4;
   int j = 0;
   int var = 1;
@@ -168,25 +182,31 @@ void loop() {
   }
   // vel[1] = 50;
   multiply();
-  Serial.print(motors[0].rpm_tar);
+  Serial.print(motors[0].pwr);
   Serial.print(" ");
-  Serial.print(motors[1].rpm_tar);
+  Serial.print(motors[1].pwr);
   Serial.print(" ");
-  Serial.print(motors[2].rpm_tar);
+  Serial.print(motors[2].pwr);
   Serial.print(" ");
   Serial.println(z);
+  move_motor(&motors[0]);
+  move_motor(&motors[1]);
+  move_motor(&motors[2]);
   digitalWrite(motors[0].PWM, HIGH);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
-  move_motor(&motors[0]);
+  MCP.setValue((int)(fabs(motors[0].pwr)*4096/255));  
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, HIGH);
   digitalWrite(motors[2].PWM, LOW);
-  move_motor(&motors[1]);
+  MCP.setValue((int)(fabs(motors[1].pwr)*4096/255));  
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, HIGH);
-  move_motor(&motors[2]);
+  MCP.setValue((int)(fabs(motors[2].pwr)*4096/255));  
+  digitalWrite(motors[0].PWM, LOW);
+  digitalWrite(motors[1].PWM, LOW);
+  digitalWrite(motors[2].PWM, LOW);
   run_motor(&tilt, tilt_sts);
   move_bldc();  
 }
@@ -222,25 +242,29 @@ void move_motor(Motor *m) {
   // m->t_curr = millis();
   // if (m->t_curr - m->t_prev >= 200) {
   //   m->rpm = m->count * 10;
-  //   m->e = abs(m->rpm_tar) - m->rpm;
-  //   m->e_int = m->e_int + (m->e * 0.2);
-  //   m->pwr = m->pwr + 0.05*m->e;// 1*m->e_int;
-  //   if (m->rpm_tar == 0) {
-  //     m->pwr = 0;
-  //     m->e = 0;
-  //     m->e_int = 0;
-  //   }
+    // m->e = abs(m->rpm_tar) - m->rpm;
+    // m->e_int = m->e_int + (m->e * 0.2);
+    // m->pwr = m->pwr + 0.05*m->e;// 1*m->e_int;
+    // if (m->rpm_tar == 0) {
+    //   m->pwr = 0;
+    //   m->e = 0;
+    //   m->e_int = 0;
+    // }
   //   m->count = 0;
   //   m->t_prev = millis();
   // }
-  m->pwr = map(m->rpm_tar, -200, 200, -255, 255);
+  //m->pwr = map(m->rpm_tar, -300, 300, -255, 255);
+  float p = map(m->rpm_tar, -300, 300, -255, 255);
+  if(m->pwr<p)
+    m->pwr = m->pwr + 0.5;
+  else if(m->pwr>p)
+    m->pwr = m->pwr - 0.5;
   if (m->rpm_tar > 0) {
     m->dir = 0;
   } else if (m->rpm_tar < 0) {
     m->dir = 1;
   } 
   digitalWrite(m->DIR, m->dir);
-  MCP.setValue((int)(fabs(m->pwr)*4096/255));
 }
 
 void update_motor_0(){

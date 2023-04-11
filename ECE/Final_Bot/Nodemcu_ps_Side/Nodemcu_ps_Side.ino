@@ -34,9 +34,9 @@ String sendps2() {
   int RIGHT = ps2x.Button(PSB_PAD_RIGHT);
   int RstMpu = ps2x.Button(PSB_CROSS);
   int i = 0;
-  float vl = (128 - LY) * 100 / 128.0;
-  float vn = (LX - 128) * 100 / 128.0;
-  float vr = (RX - 128) * 100 / 128.0;
+  float vl = ((128 - LY) * 100 / 128.0) - 3.91;
+  float vn = ((LX - 128) * 100 / 128.0) + 3.91;
+  float vr = ((RX - 128) * 100 / 128.0) + 3.91;
 
   int tilt, lift, power;
   if (PickUp) lift = 1;
