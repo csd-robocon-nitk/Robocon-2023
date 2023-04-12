@@ -76,16 +76,12 @@ int step_pow = 0;
 int shoot = 0;
 
 void run_stepper() {
-  if (step_pow == 0) {
+  if((digitalRead(20)==0 && digitalRead(stepper.DIR)==1) || (digitalRead(19)==0 && digitalRead(stepper.DIR)==0) || step_pow == 0) {
     digitalWrite(stepper.PWM, 0);
     digitalWrite(stepper.PWM, 0);
-  } else if(digitalRead(20)==1 || stepper.DIR==1) {
+  }else{
     digitalWrite(stepper.PWM, 0);
     digitalWrite(stepper.PWM, 1);
-  }
-  else {
-    digitalWrite(stepper.PWM, 0);
-    digitalWrite(stepper.PWM, 0);
   }
 }
 
@@ -108,9 +104,10 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
-  Timer1.initialize(400);
+  Timer1.initialize(350);
   Timer1.attachInterrupt(run_stepper);
   pinMode(20, INPUT_PULLUP);
+  pinMode(19, INPUT_PULLUP);
 }
 
 
@@ -290,7 +287,7 @@ void shooter() // when controller pressed, the servo must go to 45 and remain th
       delay(1000); 
       place.write(120);
       delay(500);
-      place.write(50);    
+      place.write(40);    
     }
     else {
       l_angle=0;

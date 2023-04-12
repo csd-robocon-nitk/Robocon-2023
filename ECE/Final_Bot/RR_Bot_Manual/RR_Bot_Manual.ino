@@ -81,22 +81,25 @@ void setup() {
 
   //ESC.write(0);  
 
-  motors[0] = Motor(33, 29, 31);
+  motors[0] = Motor(39, 29, 31);
   motors[1] = Motor(38, 34, 36);
-  motors[2] = Motor(39, 35, 37);
+  motors[2] = Motor(33, 35, 37);
 
   digitalWrite(motors[0].PWM, HIGH);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
   MCP.setValue(0);  
+  delay(10);
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, HIGH);
   digitalWrite(motors[2].PWM, LOW);
   MCP.setValue(0);  
+  delay(10);
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, HIGH);
   MCP.setValue(0); 
+  delay(10);
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
@@ -192,18 +195,21 @@ void loop() {
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
+  digitalWrite(motors[0].PWM, LOW);
+  digitalWrite(motors[1].PWM, LOW);
+  digitalWrite(motors[2].PWM, HIGH);
+  MCP.setValue((int)(fabs(motors[2].pwr)*4096/255)); 
+  delay(1); 
   digitalWrite(motors[0].PWM, HIGH);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
-  MCP.setValue((int)(fabs(motors[0].pwr)*4096/255));  
+  MCP.setValue((int)(fabs(motors[0].pwr)*4096/255));
+  delay(1);  
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, HIGH);
   digitalWrite(motors[2].PWM, LOW);
   MCP.setValue((int)(fabs(motors[1].pwr)*4096/255));  
-  digitalWrite(motors[0].PWM, LOW);
-  digitalWrite(motors[1].PWM, LOW);
-  digitalWrite(motors[2].PWM, HIGH);
-  MCP.setValue((int)(fabs(motors[2].pwr)*4096/255));  
+  delay(1);  
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
