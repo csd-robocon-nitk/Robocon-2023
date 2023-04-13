@@ -2,10 +2,6 @@
 
 #define LF 0x0A
 
-#include <Servo.h>
-
-Servo ESC;
-
 MCP4725 MCP(0x61);
 
 char msg_str[100];
@@ -14,8 +10,10 @@ int idx;
 String str;
 
 float z = 0;
-
-float e_angle = 0,curr_a = 0;
+float factor = 1.5;
+float e_angle = 0, curr_a = 0;
+int prev_s = 0, cur_s = 0;
+int p_pow = 0;
 
 class Motor {
 public:
@@ -41,9 +39,9 @@ public:
     analogWrite(PWM, LOW);
     digitalWrite(DIR, LOW);
   }
-  Motor(int p, int d, int enc) {
-    PWM = p;
-    DIR = d;
+  Motor(int pwm, int dir, int enc) {
+    PWM = pwm;
+    DIR = dir;
     ENC = enc;
     count = 0;
     pinMode(ENC, INPUT);
@@ -57,30 +55,17 @@ public:
 
 Motor motors[3];
 
-float mat[3][3] = { { 0, -2, -1 }, { 1.1547, 1, -1 }, { -1.1547, 1, -1 } };
-
+float mat[3][3] = { { 0, -1.8, -0.8 }, { 1.1547, 0.9, -0.8 }, { -1.1547, 0.9, -0.8 } };
 float vel[3] = { 0, 0, 0 };
 float glb_vel[3] = { 0, 0, 0 };
 
-Motor tilt;
-int tilt_sts = 0;
+Motor tilt, push;
+int tilt_sts = 0, speed = 0;
 
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
   MCP.begin();
-  pinMode(LED_BUILTIN, OUTPUT);
-
-
-  ESC.attach(9,1000,2000);
-  //Calibration
-  // ESC.write(180);
-  // delay(5000);
-  // ESC.write(0);
-  // delay(5000);
-  // Serial.begin(115200);
-
-  //ESC.write(0);  
 
   motors[0] = Motor(39, 35, 31);
   motors[1] = Motor(38, 34, 36);
@@ -89,52 +74,39 @@ void setup() {
   digitalWrite(motors[0].PWM, HIGH);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
-  MCP.setValue(0);  
-  delay(10);
+  MCP.setValue(0);
+  delay(1);
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, HIGH);
   digitalWrite(motors[2].PWM, LOW);
-  MCP.setValue(0);  
-  delay(10);
+  MCP.setValue(0);
+  delay(1);
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, HIGH);
-  MCP.setValue(0); 
-  delay(10);
+  MCP.setValue(0);
+  delay(1);
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
 
   tilt = Motor(7, 40);
-
-  // attachInterrupt(digitalPinToInterrupt(motors[0].ENC), update_motor_0, RISING);
-  // attachInterrupt(digitalPinToInterrupt(motors[1].ENC), update_motor_1, RISING);
-  // attachInterrupt(digitalPinToInterrupt(motors[2].ENC), update_motor_2, RISING);
-  digitalWrite(LED_BUILTIN, 1);
+  push = Motor(23, 25);
 }
 
-int bldc_pow=0;
-float bldc_speed=0.0;
-
-void move_bldc() {
-  if(bldc_pow!=0)
-  {
-    if(bldc_pow==1)
-    {
-      if(bldc_speed<175)
-      {
-        bldc_speed=bldc_speed+0.1;
-        ESC.write((int)bldc_speed);
-      } 
-    }
-    else {        
-      if(bldc_speed>3)
-      {
-        bldc_speed=bldc_speed-0.1;
-        ESC.write((int)bldc_speed);        
-      }              
-    }
-  }
+void move_p() {
+    if (p_pow == 1) {
+      digitalWrite(push.DIR, 0);
+      digitalWrite(push.PWM, 1);
+    } 
+    else if (p_pow == -1) {
+      digitalWrite(push.DIR, 1);
+      digitalWrite(push.PWM, 1);
+    } 
+    else {
+      digitalWrite(push.DIR, 0);
+      digitalWrite(push.PWM, 0);
+    } 
 }
 
 void loop() {
@@ -157,20 +129,23 @@ void loop() {
         str_buff[j] = 0;
         switch (var) {
           case 1:
-            glb_vel[0] = -1*atof(str_buff);
+            glb_vel[0] = -1 * atof(str_buff);
             break;
           case 2:
-            glb_vel[1] = -1*atof(str_buff);
+            glb_vel[1] = -1 * atof(str_buff);
             break;
           case 3:
-            glb_vel[2] = -1*atof(str_buff);
+            glb_vel[2] = -1 * atof(str_buff);
             break;
           case 5:
             tilt_sts = atoi(str_buff);
             break;
           case 7:
-            bldc_pow = atoi(str_buff);
-            break;                          
+            p_pow = atoi(str_buff);
+            break;
+          case 8:
+            speed = atoi(str_buff);
+            break;
           case 9:
             z = atof(str_buff);
             break;
@@ -186,13 +161,13 @@ void loop() {
   }
   // vel[1] = 50;
   multiply();
-  Serial.print(digitalRead(motors[0].DIR));
+  Serial.print(motors[0].pwr);
   Serial.print(" ");
-  Serial.print(digitalRead(motors[1].DIR));
+  Serial.print(motors[1].pwr);
   Serial.print(" ");
-  Serial.println(digitalRead(motors[2].DIR));
-  // Serial.print(" ");
-  // Serial.println(z);
+  Serial.print(motors[2].pwr);
+  Serial.print(" ");
+  Serial.println(z);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
@@ -201,28 +176,34 @@ void loop() {
   digitalWrite(motors[2].PWM, HIGH);
   MCP.setValue((int)(fabs(motors[2].pwr)*4096/255)); 
   delay(1); 
-  // Serial.print(MCP.getValue());
-  // Serial.print(" ");
   digitalWrite(motors[0].PWM, HIGH);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
   MCP.setValue((int)(fabs(motors[0].pwr)*4096/255));
-  delay(1);
-  // Serial.print(MCP.getValue());
-  // Serial.print(" ");  
+  delay(1);  
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, HIGH);
   digitalWrite(motors[2].PWM, LOW);
   MCP.setValue((int)(fabs(motors[1].pwr)*4096/255));  
   delay(1); 
-  // Serial.println(MCP.getValue());
   digitalWrite(motors[0].PWM, LOW);
   digitalWrite(motors[1].PWM, LOW);
   digitalWrite(motors[2].PWM, LOW);
   run_motor(&tilt, tilt_sts);
-  move_bldc();  
+  move_p();
+  speed_up();
 }
 
+void speed_up() {
+  cur_s = speed;
+  if(cur_s == 1 && cur_s!=prev_s){
+    if(factor == 1.5)
+      factor = 1;
+    else if(factor == 1)
+      factor = 1.5;
+  }
+  prev_s = cur_s;
+}
 
 void multiply() {
   float angle = z;
@@ -234,9 +215,9 @@ void multiply() {
   vel[0] = glb_vel[0] * cos(angle) - glb_vel[1] * sin(angle);
   vel[1] = glb_vel[0] * sin(angle) + glb_vel[1] * cos(angle);
   vel[2] = glb_vel[2];
-  motors[0].rpm_tar = (mat[0][0] * vel[0] + mat[0][1] * vel[1] + mat[0][2] * vel[2])/1.5;
-  motors[1].rpm_tar = (mat[1][0] * vel[0] + mat[1][1] * vel[1] + mat[1][2] * vel[2])/1.5;
-  motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2])/1.5;
+  motors[0].rpm_tar = (mat[0][0] * vel[0] + mat[0][1] * vel[1] + mat[0][2] * vel[2])/factor;
+  motors[1].rpm_tar = (mat[1][0] * vel[0] + mat[1][1] * vel[1] + mat[1][2] * vel[2])/factor;
+  motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2])/factor;
 }
 
 void run_motor(Motor* m, int sts) {
@@ -252,18 +233,18 @@ void run_motor(Motor* m, int sts) {
   digitalWrite(m->PWM, m->pwr);
 }
 
-void move_motor(Motor *m) {
+void move_motor(Motor* m) {
   // m->t_curr = millis();
   // if (m->t_curr - m->t_prev >= 200) {
   //   m->rpm = m->count * 10;
-    // m->e = abs(m->rpm_tar) - m->rpm;
-    // m->e_int = m->e_int + (m->e * 0.2);
-    // m->pwr = m->pwr + 0.05*m->e;// 1*m->e_int;
-    // if (m->rpm_tar == 0) {
-    //   m->pwr = 0;
-    //   m->e = 0;
-    //   m->e_int = 0;
-    // }
+  // m->e = abs(m->rpm_tar) - m->rpm;
+  // m->e_int = m->e_int + (m->e * 0.2);
+  // m->pwr = m->pwr + 0.05*m->e;// 1*m->e_int;
+  // if (m->rpm_tar == 0) {
+  //   m->pwr = 0;
+  //   m->e = 0;
+  //   m->e_int = 0;
+  // }
   //   m->count = 0;
   //   m->t_prev = millis();
   // }
@@ -281,14 +262,14 @@ void move_motor(Motor *m) {
   digitalWrite(m->DIR, m->dir);
 }
 
-void update_motor_0(){
+void update_motor_0() {
   motors[0].count++;
 }
 
-void update_motor_1(){
+void update_motor_1() {
   motors[1].count++;
 }
 
-void update_motor_2(){
+void update_motor_2() {
   motors[2].count++;
 }
