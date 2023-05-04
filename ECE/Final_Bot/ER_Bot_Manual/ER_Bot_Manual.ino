@@ -94,9 +94,9 @@ void setup() {
   latch.write(l_angle); // default angle 0 everytime arduino is reset. Kind off like a dummy variable
   place.write(180);
 
-  motors[0] = Motor(5, 27, 2, 10, 0.5, 1.5);  // Tune it
-  motors[1] = Motor(7, 25, 3, 11, 0.5, 1.5);
-  motors[2] = Motor(8, 23, 18, 12, 0.5, 1.5);
+  motors[0] = Motor(5, 27, 2, 10, 0.8, 1.5);  // Tune it
+  motors[1] = Motor(7, 25, 3, 11, 0.8, 1.5);
+  motors[2] = Motor(8, 23, 18, 12, 0.9, 1.5);
 
   tilt = Motor(9, 22);
   stepper = Motor(45, 43);
@@ -182,13 +182,13 @@ void loop() {
 
   multiply();
 
-  // Serial.print(motors[0].rpm);
-  // Serial.print(" ");
-  // Serial.print(motors[1].rpm);
-  // Serial.print(" ");
-  // Serial.print(motors[2].rpm);
-  // Serial.print(" ");
-  // Serial.println(z);
+  Serial.print(motors[0].rpm);
+  Serial.print(" ");
+  Serial.print(motors[1].rpm);
+  Serial.print(" ");
+  Serial.print(motors[2].rpm);
+  Serial.print(" ");
+  Serial.println(z);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
@@ -233,11 +233,6 @@ void move_motor(Motor* m) {
     m->e = m->rpm_tar - m->rpm;
 
     m->pwr = m->kp * m->e + m->ki * m->e_int;
-    if (m->rpm_tar == 0) {
-      m->pwr = 0;
-      m->e = 0;
-      m->e_int = 0;
-    }
     m->count = 0;
     m->t_prev = millis();
   }
