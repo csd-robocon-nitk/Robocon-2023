@@ -1,16 +1,16 @@
-#include <TimerOne.h>
-#include <Servo.h>
-Servo latch, place;
+// #include <TimerOne.h>
+// #include <Servo.h>
+// Servo latch, place;
 
-byte state = 0;
-int red_tim = 200;
+// byte state = 0;
+// int red_tim = 200;
 
 #define LF 0x0A
 
 float z = 0;
-int curr_state=0;
-int prev_state=0;
-int l_angle=0; // the angle of servo
+// int curr_state=0;
+// int prev_state=0;
+// int l_angle=0; // the angle of servo
 
 
 char msg_str[100];
@@ -66,67 +66,67 @@ public:
 };
 
 Motor motors[3];
-Motor tilt, stepper;
+// Motor tilt, stepper;
 
 float vel[3] = { 0, 0, 0 };
 float glb_vel[3] = { 0, 0, 0 };
 
-int tilt_sts = 0;
-int step_pow = 0;
-int shoot = 0;
+// int tilt_sts = 0;
+// int step_pow = 0;
+// int shoot = 0;
 
-void run_stepper() {
-  if((digitalRead(20)==0 && digitalRead(stepper.DIR)==1) || (digitalRead(19)==0 && digitalRead(stepper.DIR)==0) || step_pow == 0) {
-    digitalWrite(stepper.PWM, 0);
-    digitalWrite(stepper.PWM, 0);
-  }else{
-    digitalWrite(stepper.PWM, 0);
-    digitalWrite(stepper.PWM, 1);
-  }
-}
+// void run_stepper() {
+//   if((digitalRead(20)==0 && digitalRead(stepper.DIR)==1) || (digitalRead(19)==0 && digitalRead(stepper.DIR)==0) || step_pow == 0) {
+//     digitalWrite(stepper.PWM, 0);
+//     digitalWrite(stepper.PWM, 0);
+//   }else{
+//     digitalWrite(stepper.PWM, 0);
+//     digitalWrite(stepper.PWM, 1);
+//   }
+// }
 
 void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
-  latch.attach(44); //attach servo to pin 44
-  place.attach(13);
+  // latch.attach(44); //attach servo to pin 44
+  // place.attach(13);
   
-  latch.write(l_angle); // default angle 0 everytime arduino is reset. Kind off like a dummy variable
-  place.write(180);
+  // latch.write(l_angle); // default angle 0 everytime arduino is reset. Kind off like a dummy variable
+  // place.write(180);
 
-  motors[0] = Motor(5, 27, 2, 10, 0.8, 1.5);  // Tune it
-  motors[1] = Motor(7, 25, 3, 11, 0.8, 1.5);
-  motors[2] = Motor(8, 23, 18, 12, 0.9, 1.5);
+  motors[0] = Motor(4, 22, 2, 34, 0.7, 1.2);  // Tune it
+  motors[1] = Motor(5, 23, 3, 35, 0.7, 1.2);
+  motors[2] = Motor(6, 24, 18, 36, 0.7, 1.2);
 
-  tilt = Motor(9, 22);
-  stepper = Motor(45, 43);
+  // tilt = Motor(9, 22);
+  // stepper = Motor(45, 43);
 
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
-  Timer1.initialize(350);
-  Timer1.attachInterrupt(run_stepper);
-  pinMode(20, INPUT_PULLUP);
-  pinMode(19, INPUT_PULLUP);
+  // Timer1.initialize(350);
+  // Timer1.attachInterrupt(run_stepper);
+  // pinMode(20, INPUT_PULLUP);
+  // pinMode(19, INPUT_PULLUP);
 }
 
 
-void move_stepper() {
-  if (step_pow != 0) {
-    if (step_pow == -1) {
-      digitalWrite(stepper.DIR, 0);
-      release++;
-      Serial.println(release);
-      if(release==5000){
-        Serial.println("Set");
-        place.write(180);
-        release = 0;
-      }
-    } else if (step_pow == 1) {
-      digitalWrite(stepper.DIR, 1);
-    }
-  }
-}
+// void move_stepper() {
+//   if (step_pow != 0) {
+//     if (step_pow == -1) {
+//       digitalWrite(stepper.DIR, 0);
+//       release++;
+//       Serial.println(release);
+//       if(release==5000){
+//         Serial.println("Set");
+//         place.write(180);
+//         release = 0;
+//       }
+//     } else if (step_pow == 1) {
+//       digitalWrite(stepper.DIR, 1);
+//     }
+//   }
+// }
 
 void loop() {
   while (Serial2.available()) {
@@ -157,15 +157,15 @@ void loop() {
           case 3:
             glb_vel[2] = -1 * atof(str_buff);
             break;
-          case 5:
-            tilt_sts = atoi(str_buff);
-            break;
-          case 7:
-            step_pow = atoi(str_buff);
-            break;
-          case 8:
-            shoot = atoi(str_buff);
-            break;
+          // case 5:
+          //   tilt_sts = atoi(str_buff);
+          //   break;
+          // case 7:
+          //   step_pow = atoi(str_buff);
+          //   break;
+          // case 8:
+          //   shoot = atoi(str_buff);
+          //   break;
           case 9:
             z = atof(str_buff);
             break;
@@ -192,13 +192,13 @@ void loop() {
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
-  run_motor(&tilt, tilt_sts);
-  shooter();
-  move_stepper();
+  // run_motor(&tilt, tilt_sts);
+  // shooter();
+  // move_stepper();
 }
 
 void multiply() {
-  float angle = z;
+  float angle = 0;
   if (angle >= 360)
     angle = angle - 360;
   if (angle <= -360)
@@ -212,18 +212,18 @@ void multiply() {
   motors[2].rpm_tar = (mat[2][0] * vel[0] + mat[2][1] * vel[1] + mat[2][2] * vel[2]);
 }
 
-void run_motor(Motor* m, int sts) {
-  if (sts == 0)
-    m->pwr = 0;
-  else if (sts == 1) {
-    m->pwr = 1;
-    digitalWrite(m->DIR, 0);
-  } else if (sts == -1) {
-    m->pwr = 1;
-    digitalWrite(m->DIR, 1);
-  }
-  digitalWrite(m->PWM, m->pwr);
-}
+// void run_motor(Motor* m, int sts) {
+//   if (sts == 0)
+//     m->pwr = 0;
+//   else if (sts == 1) {
+//     m->pwr = 1;
+//     digitalWrite(m->DIR, 0);
+//   } else if (sts == -1) {
+//     m->pwr = 1;
+//     digitalWrite(m->DIR, 1);
+//   }
+//   digitalWrite(m->PWM, m->pwr);
+// }
 
 void move_motor(Motor* m) {
   m->t_curr = millis();
@@ -240,6 +240,12 @@ void move_motor(Motor* m) {
     m->dir = 0;
   } else {
     m->dir = 1;
+  }
+  if(m->rpm_tar==0)
+  {
+    m->pwr = 0;
+    m->e = 0;
+    m->e_int = 0;
   }
   digitalWrite(m->DIR, m->dir);
   analogWrite(m->PWM, (int)fabs(m->pwr));
@@ -269,27 +275,27 @@ void update_count_2() {
   }
 }
 
-void shooter() // when controller pressed, the servo must go to 45 and remain there even after removing the hand.
-{
-  curr_state = shoot;
-  // declare a preset angle at 0. Toggle it between 0 and 45 everytime the button is pressed.
-  if (curr_state==1 && prev_state==0)
-  {
-    if (l_angle==0)
-    {
-      l_angle=45;  
-      place.write(50); 
-      delay(1000); 
-      place.write(120);
-      delay(500);
-      place.write(40);    
-    }
-    else {
-      l_angle=0;
-      place.write(180);
-      delay(1000);
-    }
-    latch.write(l_angle);
-  }
-  prev_state=curr_state;
-}
+// void shooter() // when controller pressed, the servo must go to 45 and remain there even after removing the hand.
+// {
+//   curr_state = shoot;
+//   // declare a preset angle at 0. Toggle it between 0 and 45 everytime the button is pressed.
+//   if (curr_state==1 && prev_state==0)
+//   {
+//     if (l_angle==0)
+//     {
+//       l_angle=45;  
+//       place.write(50); 
+//       delay(1000); 
+//       place.write(120);
+//       delay(500);
+//       place.write(40);    
+//     }
+//     else {
+//       l_angle=0;
+//       place.write(180);
+//       delay(1000);
+//     }
+//     latch.write(l_angle);
+//   }
+//   prev_state=curr_state;
+// }
