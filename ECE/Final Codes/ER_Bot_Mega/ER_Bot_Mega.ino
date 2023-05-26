@@ -115,6 +115,7 @@ void loop() {
             break;
           case 8:
             locky = atoi(str_buff);
+            break;
           case 9:
             z = atof(str_buff);
             break;
