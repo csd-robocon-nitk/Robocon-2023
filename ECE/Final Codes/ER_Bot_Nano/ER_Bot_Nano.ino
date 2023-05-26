@@ -11,14 +11,14 @@
 #define pick_down A6
 #define solenoid_pin 6
 #define latch_pin 5
-#define stepper_pwm 0  //Change it
-#define stepper_dir 0  //Change it
-#define pick_pwm 0     //Change it
-#define pick_dir 0     //Change it
-#define gantry_pwm 0    //Change it
-#define gantry_dir 0    //Change it
-#define lift_pwm 0     //Change it
-#define lift_dir 0     //Change it
+#define stepper_pwm 11
+#define stepper_dir 13
+#define pick_pwm 3
+#define pick_dir 4
+#define gantry_pwm A0
+#define gantry_dir 9
+#define lift_pwm 10
+#define lift_dir A1
 
 Servo latch_servo;
 
@@ -34,7 +34,7 @@ int step_pow = 0;
 int pick = 0;
 
 // For lifting
-int lift = 0; 
+int lift = 0;
 
 // Function to manually generate pulse for stepper motor
 void run_stepper() {
@@ -87,11 +87,12 @@ void move_lift() {
 // Function for reloading sequence
 void reload_seq() {
   while (digitalRead(gantry_left) != 0) {
+    // Move gantry left
     digitalWrite(gantry_dir, 1);
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  digitalWrite(solenoid_pin, HIGH);
+  digitalWrite(solenoid_pin, LOW);
   while (analogRead(pick_up) != 0) {
     //Move picking plate up and turn on solenoid
     digitalWrite(pick_dir, LOW);
@@ -110,14 +111,18 @@ void reload_seq() {
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  digitalWrite(solenoid_pin, LOW);
+  digitalWrite(solenoid_pin, HIGH);
 }
 
 // Function to run shooting sequence
 void shoot_seq() {
-  digitalWrite(solenoid_pin, HIGH);
+  // Release shooting plate and ring
+  digitalWrite(solenoid_pin, LOW);
   delay(500);
   latch_servo.write(0);
+  delay(500);
+  digitalWrite(solenoid_pin, HIGH);
+  // Move forward and latch to shooting plate
   while (digitalRead(shooter_front != 0)) {
     step_pow = 1;
     move_stepper();
@@ -125,7 +130,6 @@ void shoot_seq() {
   step_pow = 0;
   move_stepper();
   latch_servo.write(45);
-  digitalWrite(solenoid_pin, LOW);
 }
 
 void setup() {
@@ -146,11 +150,12 @@ void setup() {
   latch_servo.attach(latch_pin);
   Timer1.initialize(350);
   Timer1.attachInterrupt(run_stepper);
+  digitalWrite(solenoid_pin, HIGH);
   shoot_seq();
 }
 
 void loop() {
-  //Reading data from esp07
+  // Reading data from esp07
   while (Serial.available()) {
     msg_str[idx] = Serial.read();
     if (msg_str[idx] == LF) {

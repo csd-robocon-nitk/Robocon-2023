@@ -8,6 +8,9 @@ unsigned long release = 0;
 
 float conv_matrix[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
+// Variable to determine locking x and y direction motion
+int lockx = 0, locky = 0;
+
 //Motors class with all motor properties
 class Motor {
 public:
@@ -70,7 +73,7 @@ void setup() {
   motors[1] = Motor(5, 23, 3, 35, 0.7, 1.2);
   motors[2] = Motor(6, 24, 18, 36, 0.7, 1.2);
 
-  // etting up interrupts for encoders
+  // Setting up interrupts for encoders
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[1].ENCA), update_count_1, RISING);
   attachInterrupt(digitalPinToInterrupt(motors[2].ENCA), update_count_2, RISING);
@@ -107,6 +110,11 @@ void loop() {
           case 3:
             glb_vel[2] = -1 * atof(str_buff);
             break;
+          case 7:
+            lockx = atoi(str_buff);
+            break;
+          case 8:
+            locky = atoi(str_buff);
           case 9:
             z = atof(str_buff);
             break;
@@ -121,6 +129,12 @@ void loop() {
     }
   }
 
+  //Lock x and y direction motion logic
+  if(lockx == 1)
+    glb_vel[1] = 0;
+  if(locky == 1)
+    glb_vel[0] = 0;
+    
   multiply();
 
   // Printing values for debugging purposes
