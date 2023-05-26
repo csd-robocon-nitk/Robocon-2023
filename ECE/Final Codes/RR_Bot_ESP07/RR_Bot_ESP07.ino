@@ -117,15 +117,17 @@ void loop()
   mpu.getEvent(&a, &g, &temp);
   msg = httpGETRequest(serverName);
 
-  // Reseting microcontroller on command
+  // Arduino Mega reset logic
   if(msg == "rst_mega") 
     digitalWrite(rst_mega, LOW);
+  else
+    digitalWrite(rst_mega, HIGH);
+
+  // Arduino Nano reset logic
   else if(msg == "rst_nano")
     digitalWrite(rst_nano, LOW);
-  else {
-    digitalWrite(rst_mega, HIGH);
+  else 
     digitalWrite(rst_nano, HIGH);
-  }
 
   //Reseting MPU on command
   if(msg == "rst_mpu")

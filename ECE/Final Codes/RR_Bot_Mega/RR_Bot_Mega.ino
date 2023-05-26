@@ -8,6 +8,9 @@ int idx;
 
 float conv_matrix[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
+// Variable to determine locking x and y direction motion
+int lockx = 0, locky = 0;
+
 // Motor class with all motor properties
 class Motor {
 public:
@@ -109,6 +112,15 @@ void loop() {
           case 3:
             glb_vel[2] = -1 * atof(str_buff);
             break;
+          case 7:
+            lockx = atoi(str_buff);
+            break;
+          case 8:
+            locky = atoi(str_buff);
+            break;
+          case 9:
+            z = atof(str_buff);
+            break;
         }
         var++;
         j = -1;
@@ -120,6 +132,12 @@ void loop() {
     }
   }
 
+  //Lock x and y direction motion logic
+  if(lockx == 1)
+    glb_vel[1] = 0;
+  if(locky == 1)
+    glb_vel[0] = 0;
+    
   multiply();
 
   // Printing motor rpm for debugging
@@ -151,7 +169,7 @@ void multiply() {
   motors[2].rps_tar = (conv_matrix[2][0] * vel[0] + conv_matrix[2][1] * vel[1] + conv_matrix[2][2] * vel[2])/25;
 }
 
-//Function to move the motoe
+//Function to move the motor
 void move_motor(Motor* m) {
   m->t_curr = millis();
   if (m->t_curr - m->t_prev >= 200) {
