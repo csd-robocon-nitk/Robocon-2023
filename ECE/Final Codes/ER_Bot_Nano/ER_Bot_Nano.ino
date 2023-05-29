@@ -1,5 +1,4 @@
 #include <Servo.h>
-#include <TimerOne.h>
 
 #define LF 0x0A
 
@@ -15,12 +14,34 @@
 #define stepper_dir 13
 #define pick_pwm 3
 #define pick_dir 4
-#define gantry_pwm A0
-#define gantry_dir 9
+#define gantry_pwm 9
+#define gantry_dir A0
 #define lift_pwm 10
 #define lift_dir A1
 
-Servo latch_servo;
+Servo latch_s;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(gantry_right, INPUT);
+  pinMode(gantry_left, INPUT_PULLUP);
+  pinMode(shooter_back, INPUT_PULLUP);
+  pinMode(shooter_front, INPUT_PULLUP);
+  pinMode(solenoid_pin, OUTPUT);
+  pinMode(stepper_dir, OUTPUT);
+  pinMode(stepper_pwm, OUTPUT);
+  pinMode(pick_dir, OUTPUT);
+  pinMode(pick_pwm, OUTPUT);
+  pinMode(gantry_dir, OUTPUT);
+  pinMode(gantry_pwm, OUTPUT);
+  pinMode(lift_pwm, OUTPUT);
+  pinMode(lift_dir, OUTPUT);
+  latch_s.attach(latch_pin);
+  digitalWrite(solenoid_pin, HIGH);
+  //shoot_seq();
+  delay(3000);
+  reload_seq();
+}
 
 // For serial communication
 char msg_str[100];
@@ -36,26 +57,21 @@ int pick = 0;
 // For lifting
 int lift = 0;
 
-// Function to manually generate pulse for stepper motor
-void run_stepper() {
-  if ((digitalRead(shooter_back) == 0 && digitalRead(stepper_dir) == 1) || (digitalRead(shooter_front) == 0 && digitalRead(stepper_dir) == 0) || step_pow == 0) {
+// Function to move stepper motor
+void move_stepper() {
+  if (step_pow == -1) {
+    digitalWrite(stepper_dir, 0);
+  } else if (step_pow == 1) {
+    digitalWrite(stepper_dir, 1);
+  }
+  if ((digitalRead(shooter_back) == 0 && digitalRead(stepper_dir) == 0) || (digitalRead(shooter_front) == 0 && digitalRead(stepper_dir) == 1) || step_pow == 0) {
     digitalWrite(stepper_pwm, 0);
     digitalWrite(stepper_pwm, 0);
   } else {
     digitalWrite(stepper_pwm, 0);
     digitalWrite(stepper_pwm, 1);
   }
-}
-
-// Function to move stepper motor
-void move_stepper() {
-  if (step_pow != 0) {
-    if (step_pow == -1) {
-      digitalWrite(stepper_dir, 0);
-    } else if (step_pow == 1) {
-      digitalWrite(stepper_dir, 1);
-    }
-  }
+  delayMicroseconds(700);
 }
 
 // Function to move picking plate
@@ -92,18 +108,18 @@ void reload_seq() {
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  digitalWrite(solenoid_pin, LOW);
   while (analogRead(pick_up) != 0) {
     //Move picking plate up and turn on solenoid
     digitalWrite(pick_dir, LOW);
     analogWrite(pick_pwm, 100);
   }
   analogWrite(pick_pwm, 0);
-  while (digitalRead(gantry_right) != 0) {
+  while (analogRead(gantry_right) >= 5) {
     //Move gantry right
     digitalWrite(gantry_dir, 0);
     digitalWrite(gantry_pwm, 1);
   }
+  digitalWrite(solenoid_pin, LOW);
   digitalWrite(gantry_pwm, 0);
   while (digitalRead(gantry_left) != 0) {
     //Move gantry left and switch of solenoid
@@ -119,40 +135,21 @@ void shoot_seq() {
   // Release shooting plate and ring
   digitalWrite(solenoid_pin, LOW);
   delay(500);
-  latch_servo.write(0);
-  delay(500);
+  latch_s.write(0);
+  delay(1000);
   digitalWrite(solenoid_pin, HIGH);
   // Move forward and latch to shooting plate
-  while (digitalRead(shooter_front != 0)) {
+  while (digitalRead(shooter_front) != 0) {
     step_pow = 1;
     move_stepper();
   }
   step_pow = 0;
   move_stepper();
-  latch_servo.write(45);
+  delay(300);
+  latch_s.write(45);
+  delay(1000);
 }
 
-void setup() {
-  Serial.begin(115200);
-  pinMode(gantry_right, INPUT_PULLUP);
-  pinMode(gantry_left, INPUT_PULLUP);
-  pinMode(shooter_back, INPUT_PULLUP);
-  pinMode(shooter_front, INPUT_PULLUP);
-  pinMode(solenoid_pin, OUTPUT);
-  pinMode(stepper_dir, OUTPUT);
-  pinMode(stepper_pwm, OUTPUT);
-  pinMode(pick_dir, OUTPUT);
-  pinMode(pick_pwm, OUTPUT);
-  pinMode(gantry_dir, OUTPUT);
-  pinMode(gantry_pwm, OUTPUT);
-  pinMode(lift_pwm, OUTPUT);
-  pinMode(lift_dir, OUTPUT);
-  latch_servo.attach(latch_pin);
-  Timer1.initialize(350);
-  Timer1.attachInterrupt(run_stepper);
-  digitalWrite(solenoid_pin, HIGH);
-  shoot_seq();
-}
 
 void loop() {
   // Reading data from esp07
