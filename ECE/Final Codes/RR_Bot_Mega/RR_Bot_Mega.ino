@@ -1,17 +1,17 @@
 #define LF 0x0A
 
 float z = 0;
-
 char msg_str[100];
 char str_buff[7];
 int idx;
+unsigned long release = 0;
 
 float conv_matrix[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
 // Variable to determine locking x and y direction motion
 int lockx = 0, locky = 0;
 
-// Motor class with all motor properties
+//Motors class with all motor properties
 class Motor {
 public:
   int PWM;
@@ -20,14 +20,12 @@ public:
   int ENCB;
   int count;
   float e = 0;
-  float e_prev = 0;
   float pwr = 0;
   short int dir = 0;
-  float rps_tar;
+  float rpm_tar;
   long int t_prev, t_curr;
   float e_int = 0;
-  float e_d = 0;
-  float rps = 0.00;
+  float rpm = 0.00;
   float kp = 0;
   float ki = 0;
 
@@ -59,10 +57,10 @@ public:
   }
 };
 
-// Initializing three instances of the motors
+// Initializing three instances of motor class
 Motor motors[3];
 
-// Local and Global frame velocities
+// Local and Global frame vlocities
 float vel[3] = { 0, 0, 0 };
 float glb_vel[3] = { 0, 0, 0 };
 
@@ -70,10 +68,10 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(115200);
 
-  // Defining motor parameters
-  motors[0] = Motor(4, 22, 2, 34, 20, 18);   //Motor(pwm_pin, dir_pin, enc_a_pin, enc_b_pin, kp_value, ki_value)
-  motors[1] = Motor(5, 23, 3, 35, 20, 18);
-  motors[2] = Motor(6, 24, 18, 36, 20, 18);
+  // Defining motor objects
+  motors[0] = Motor(4, 22, 2, 34, 0.4, 1.5);  //Motor(pmw_pin, dir_pin, enc_a_pin, enc_b_pin, kp_value, ki_value)
+  motors[1] = Motor(5, 23, 3, 35, 0.4, 1.3);
+  motors[2] = Motor(6, 24, 18, 36, 0.4, 1.35);
 
   // Setting up interrupts for encoders
   attachInterrupt(digitalPinToInterrupt(motors[0].ENCA), update_count_0, RISING);
@@ -82,7 +80,7 @@ void setup() {
 }
 
 void loop() {
-  // Retrieving data from esp07
+  //Reading data from esp07
   while (Serial2.available()) {
     msg_str[idx] = Serial2.read();
     if (msg_str[idx] == LF) {
@@ -97,9 +95,9 @@ void loop() {
   int j = 0;
   int var = 1;
 
-  //splitting the data
+  // Splitting the data
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 9) {
+    while (var <= 11) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
         str_buff[j] = 0;
         switch (var) {
@@ -118,7 +116,7 @@ void loop() {
           case 8:
             locky = atoi(str_buff);
             break;
-          case 9:
+          case 10:
             z = atof(str_buff);
             break;
         }
@@ -133,27 +131,31 @@ void loop() {
   }
 
   //Lock x and y direction motion logic
-  if(lockx == 1)
+  if (lockx == 1)
     glb_vel[1] = 0;
-  if(locky == 1)
+  if (locky == 1)
     glb_vel[0] = 0;
-    
+
   multiply();
 
-  // Printing motor rpm for debugging
-  Serial.print(motors[0].rps);
+  // Printing values for debugging purposes
+  Serial.print(motors[0].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[1].rps);
+  Serial.print(motors[1].rpm_tar);
   Serial.print(" ");
-  Serial.print(motors[2].rps);
+  Serial.print(motors[2].rpm_tar);
   Serial.print(" ");
-  Serial.println(z);
+  Serial.print(motors[0].rpm);
+  Serial.print(" ");
+  Serial.print(motors[1].rpm);
+  Serial.print(" ");
+  Serial.println(motors[2].rpm);
   move_motor(&motors[0]);
   move_motor(&motors[1]);
   move_motor(&motors[2]);
 }
 
-// Function to convert bot velocity to velocity of each wheel
+// Function to convert bot velocities to velocitiy of each wheel
 void multiply() {
   float angle = z;
   if (angle >= 360)
@@ -164,50 +166,58 @@ void multiply() {
   vel[0] = glb_vel[0] * cos(angle) - glb_vel[1] * sin(angle);
   vel[1] = glb_vel[0] * sin(angle) + glb_vel[1] * cos(angle);
   vel[2] = glb_vel[2];
-  motors[0].rps_tar = (conv_matrix[0][0] * vel[0] + conv_matrix[0][1] * vel[1] + conv_matrix[0][2] * vel[2])/25;
-  motors[1].rps_tar = (conv_matrix[1][0] * vel[0] + conv_matrix[1][1] * vel[1] + conv_matrix[1][2] * vel[2])/25;
-  motors[2].rps_tar = (conv_matrix[2][0] * vel[0] + conv_matrix[2][1] * vel[1] + conv_matrix[2][2] * vel[2])/25;
+  motors[0].rpm_tar = (conv_matrix[0][0] * vel[0] + conv_matrix[0][1] * vel[1] + conv_matrix[0][2] * vel[2]) / 0.7;
+  motors[1].rpm_tar = (conv_matrix[1][0] * vel[0] + conv_matrix[1][1] * vel[1] + conv_matrix[1][2] * vel[2]) / 0.7;
+  motors[2].rpm_tar = (conv_matrix[2][0] * vel[0] + conv_matrix[2][1] * vel[1] + conv_matrix[2][2] * vel[2]) / 0.7;
 }
 
-//Function to move the motor
+//Function to move a motor
 void move_motor(Motor* m) {
   m->t_curr = millis();
   if (m->t_curr - m->t_prev >= 200) {
-    m->rps = m->count / 6;
-    if(m->rps_tar < 0)
-      m->rps = -1*m->rps;
-    m->e = m->rps_tar - m->rps;
+    m->rpm = m->count * 3;
     m->e_int = m->e_int + (m->e * 0.2);
+    m->e = m->rpm_tar - m->rpm;
+
     m->pwr = m->kp * m->e + m->ki * m->e_int;
     m->count = 0;
     m->t_prev = millis();
   }
-  if(m->rps_tar == 0)
-  {
-    m->e = 0;
-    m->e_int = 0;
-    m->pwr = 0;
-  }
-  if (m->rps_tar > 0) {
-    m->dir = 1;
-  } else if(m->rps_tar < 0){
+  if (m->pwr >= 0) {
     m->dir = 0;
   } else {
-    m->dir = !m->dir;
+    m->dir = 1;
+  }
+  if (m->rpm_tar == 0) {
+    m->pwr = 0;
+    m->e = 0;
+    m->e_int = 0;
   }
   digitalWrite(m->DIR, m->dir);
   analogWrite(m->PWM, (int)fabs(m->pwr));
 }
 
-// Interrupt routines
+// Interrupt functions
 void update_count_0() {
-  motors[0].count++;
+  if (digitalRead(motors[0].ENCB) != 1) {
+    motors[0].count++;
+  } else {
+    motors[0].count--;
+  }
 }
 
 void update_count_1() {
-  motors[1].count++;
+  if (digitalRead(motors[1].ENCB) != 1) {
+    motors[1].count++;
+  } else {
+    motors[1].count--;
+  }
 }
 
 void update_count_2() {
-  motors[2].count++;
+  if (digitalRead(motors[2].ENCB) != 1) {
+    motors[2].count++;
+  } else {
+    motors[2].count--;
+  }
 }

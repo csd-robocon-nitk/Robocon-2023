@@ -97,7 +97,7 @@ void loop() {
 
   // Splitting the data
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 9) {
+    while (var <= 11) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
         str_buff[j] = 0;
         switch (var) {
@@ -116,7 +116,7 @@ void loop() {
           case 8:
             locky = atoi(str_buff);
             break;
-          case 9:
+          case 10:
             z = atof(str_buff);
             break;
         }
