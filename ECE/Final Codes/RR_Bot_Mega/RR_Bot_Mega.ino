@@ -166,9 +166,9 @@ void multiply() {
   vel[0] = glb_vel[0] * cos(angle) - glb_vel[1] * sin(angle);
   vel[1] = glb_vel[0] * sin(angle) + glb_vel[1] * cos(angle);
   vel[2] = glb_vel[2];
-  motors[0].rpm_tar = (conv_matrix[0][0] * vel[0] + conv_matrix[0][1] * vel[1] + conv_matrix[0][2] * vel[2]) / 0.7;
-  motors[1].rpm_tar = (conv_matrix[1][0] * vel[0] + conv_matrix[1][1] * vel[1] + conv_matrix[1][2] * vel[2]) / 0.7;
-  motors[2].rpm_tar = (conv_matrix[2][0] * vel[0] + conv_matrix[2][1] * vel[1] + conv_matrix[2][2] * vel[2]) / 0.7;
+  motors[0].rpm_tar = (conv_matrix[0][0] * vel[0] + conv_matrix[0][1] * vel[1] + conv_matrix[0][2] * vel[2]) / 0.5;
+  motors[1].rpm_tar = (conv_matrix[1][0] * vel[0] + conv_matrix[1][1] * vel[1] + conv_matrix[1][2] * vel[2]) / 0.5;
+  motors[2].rpm_tar = (conv_matrix[2][0] * vel[0] + conv_matrix[2][1] * vel[1] + conv_matrix[2][2] * vel[2]) / 0.5;
 }
 
 //Function to move a motor
@@ -178,7 +178,6 @@ void move_motor(Motor* m) {
     m->rpm = m->count * 3;
     m->e_int = m->e_int + (m->e * 0.2);
     m->e = m->rpm_tar - m->rpm;
-
     m->pwr = m->kp * m->e + m->ki * m->e_int;
     m->count = 0;
     m->t_prev = millis();
