@@ -38,9 +38,7 @@ void setup() {
   pinMode(lift_dir, OUTPUT);
   latch_s.attach(latch_pin);
   digitalWrite(solenoid_pin, HIGH);
-  //shoot_seq();
-  delay(3000);
-  reload_seq();
+  shoot_seq();
 }
 
 // For serial communication
