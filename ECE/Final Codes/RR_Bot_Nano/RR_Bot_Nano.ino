@@ -2,23 +2,23 @@
 
 #define LF 0x0A
 
-// Change these
-#define gantry_right 0
-#define gantry_left 0
-#define shooter_back 0
-#define shooter_front 0
-#define pick_up 0
-#define pick_down 0
-#define esc_pin 0
-#define servo_pin 0
-#define push_pwm 0
-#define push_dir 0
-#define pick_pwm 0
-#define pick_dir 0
-#define gantry_pwm 0
-#define gantry_dir 0
-#define tilt_pwm 0
-#define tilt_dir 0
+// Pins for each component
+#define gantry_right A2
+#define gantry_left A3
+#define shooter_back A4
+#define shooter_front A7
+#define pick_up A5
+#define pick_down A6
+#define esc_pin 5
+#define servo_pin 6
+#define push_pwm 12
+#define push_dir A0
+#define pick_pwm 3
+#define pick_dir 4
+#define gantry_pwm 8
+#define gantry_dir 13
+#define tilt_pwm 10
+#define tilt_dir A1
 
 Servo g_servo, esc;
 
@@ -45,6 +45,7 @@ void setup() {
   delay(5000);
   esc.write(0);
   delay(5000);
+  g_servo.write(180);
   shoot_seq();
 }
 
@@ -61,7 +62,7 @@ int tilt = 0;
 
 // Function to move picking plate
 void move_picker() {
-  if (pick == 1 && analogRead(pick_up) != 0) {
+  if (pick == 1 && digitalRead(pick_up) != 0) {
     digitalWrite(pick_dir, LOW);
     analogWrite(pick_pwm, 100);
   } else if (pick == -1 && analogRead(pick_down) != 0) {
@@ -75,11 +76,11 @@ void move_picker() {
 // Function to tilt shooting mechanism
 void move_tilt() {
   if (tilt == 1) {
-    digitalWrite(tilt_dir, LOW);
-    digitalWrite(tilt_pwm, 1);
-  } else if (tilt == -1) {
     digitalWrite(tilt_dir, HIGH);
-    digitalWrite(tilt_pwm, 1);
+    analogWrite(tilt_pwm, 100);
+  } else if (tilt == -1) {
+    digitalWrite(tilt_dir, LOW);
+    analogWrite(tilt_pwm, 100);
   } else {
     digitalWrite(tilt_pwm, 0);
   }
@@ -93,22 +94,23 @@ void reload_seq() {
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  while (analogRead(pick_up) != 0) {
+  while (digitalRead(pick_up) != 0) {
     //Move picking plate up
     digitalWrite(pick_dir, LOW);
     analogWrite(pick_pwm, 100);
   }
   analogWrite(pick_pwm, 0);
-  while (analogRead(gantry_right) >= 5) {
+  while (digitalRead(gantry_right) != 0) {
     //Move gantry right
     digitalWrite(gantry_dir, 0);
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
   //Move gantry servo
-  g_servo.write(170);
-  delay(500);
-  g_servo.write(0);
+  g_servo.write(20);
+  delay(1000);
+  g_servo.write(180);
+  delay(1000);
   while (digitalRead(gantry_left) != 0) {
     //Move gantry left
     digitalWrite(gantry_dir, 1);
@@ -124,7 +126,7 @@ void shoot_seq() {
   delay(500);
 
   // Push ring forward
-  while (digitalRead(shooter_front) != 0) {
+  while (analogRead(shooter_front) != 0) {
     digitalWrite(push_dir, LOW);
     digitalWrite(push_pwm, HIGH);
   }
