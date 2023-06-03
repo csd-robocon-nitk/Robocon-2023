@@ -46,7 +46,7 @@ void TimerHandler()
 {
   vel_z = g.gyro.z - err_z;
   cur_z = vel_z*0.573;
-  z = (fabs(cur_z)>0.03)?z + (cur_z):z;
+  //z = (fabs(cur_z)>0.03)?z + (cur_z):z;
 }
 
 void setup() 
@@ -124,7 +124,7 @@ void loop()
     digitalWrite(rst_mega, HIGH);
 
   // Arduino Nano reset logic
-  else if(msg == "rst_nano")
+  if(msg == "rst_nano")
     digitalWrite(rst_nano, LOW);
   else 
     digitalWrite(rst_nano, HIGH);
