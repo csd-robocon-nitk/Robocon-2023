@@ -1,5 +1,4 @@
 #include <ESP8266WiFi.h>
-#include <SoftwareSerial.h>
 #include "ESPAsyncWebServer.h"
 
 #define LF 0x0A
@@ -14,15 +13,10 @@ int idx;
 
 // Function to take data from serial and send it through wifi
 String send_data() {
-  while (Serial.available()) {
-    msg[idx] = Serial.read();
-    if (msg[idx] == LF) {
-      msg[idx - 1] = 0;
-      idx = 0;
-      break;
-    }
-    idx++;
-  }
+  // Read a string from serial
+  if (Serial.available() > 0)
+    msg = Serial.readStringUntil('\n');
+  
   return msg;
 }
 
@@ -30,7 +24,6 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-
   // Creating an access point with specified ssid and password
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, password);

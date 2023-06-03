@@ -7,18 +7,18 @@
 #define PS2_CLK 13
 
 // Pin numbers of other buttons.......Change these
-#define plate_up 0
-#define plate_down 0
-#define rotate_cw 0
-#define rotate_ccw 0
-#define lock_x 0
-#define lock_y 0
-#define type1 0
-#define type2 0
-#define type3 0
-#define type4 0
-#define type5 0
-#define adj_pos 0
+#define plate_up A7
+#define plate_down A6
+#define rotate_cw 3
+#define rotate_ccw 5
+#define lock_x 6
+#define lock_y 7
+#define type1 A5
+#define type2 A4
+#define type3 8
+#define type4 4
+#define type5 2
+#define adj_pos 9
 
 // Pins of led indicators...Change these too
 #define lockx_in 0
@@ -36,8 +36,6 @@ void setup() {
   // Configure the PS2 controller to work with Arduino Nano
   int error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, false, false);
   // Configure all other buttons and leds
-  pinMode(plate_up, INPUT_PULLUP);
-  pinMode(plate_down, INPUT_PULLUP);
   pinMode(rotate_cw, INPUT_PULLUP);
   pinMode(rotate_ccw, INPUT_PULLUP);
   pinMode(lock_x, INPUT_PULLUP);
@@ -114,25 +112,25 @@ void loop() {
 
       // Hangling pick buttons
       int pick;
-      if (digitalRead(plate_up) == 0)
+      if (analogRead(plate_up) == 0)
         pick = 1;
-      else if (digitalRead(plate_down) == 0)
+      else if (analogRead(plate_down) == 0)
         pick = -1;
       else
         pick = 0;
 
       // Handling lock buttons
-      if (digitalRead(lock_x) == 1 && lockx_prev == 0) {
+      if (digitalRead(lock_x) == 0 && lockx_prev == 1) {
         lockx = !lockx;
-        lockx_prev = 1;
-      } else {
         lockx_prev = 0;
+      } else if (digtalRead(lock_x) == 1 && lockx_prev == 0) {
+        lockx_prev = 1;
       }
-      if (digitalRead(lock_y) == 1 && locky_prev == 0) {
+      if (digitalRead(lock_y) == 0 && locky_prev == 1) {
         locky = !locky;
-        locky_prev = 1;
-      } else {
         locky_prev = 0;
+      } else if (digtalRead(lock_y) == 1 && locky_prev == 0) {
+        locky_prev = 1;
       }
 
       //Calculate velocities
@@ -159,7 +157,7 @@ void loop() {
       if (Speed == 1 && speed_prev == 0) {
         speed = !speed;
         speed_prev = 1;
-      } else {
+      } else (Speed == 0 && speed_prev == 1) {
         speed_prev = 0;
       }
 
