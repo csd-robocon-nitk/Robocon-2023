@@ -21,15 +21,15 @@
 #define adj_pos 9
 
 // Pins of led indicators...Change these too
-#define lockx_in 0
-#define locky_in 0
-#define speed_in 0
+#define lockx_in A1
+#define locky_in A2
+#define speed_in A3
 
 PS2X ps2x;
 String msg;
 
 int lockx = 0, locky = 0, speed = 0;
-int lockx_prev = 0, locky_prev = 0, speed_prev = 0;
+int lockx_prev = 0, locky_prev = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -55,6 +55,7 @@ void setup() {
 }
 
 void loop() {
+  ps2x.Analog(1);
   ps2x.read_gamepad();
 
   // Handling reset buttons first
@@ -104,7 +105,7 @@ void loop() {
       int LY = ps2x.Analog(PSS_LY);
       int LX = ps2x.Analog(PSS_LX);
       int RX = ps2x.Analog(PSS_RX);
-      int Speed = ps2x.Button(PSB_SQUARE);
+      int Speed = ps2x.ButtonReleased(PSB_SQUARE);
       int Angle_Up = ps2x.Button(PSB_PAD_UP);
       int Angle_Down = ps2x.Button(PSB_PAD_DOWN);
       int Pull = ps2x.Button(PSB_PAD_LEFT);
@@ -123,13 +124,13 @@ void loop() {
       if (digitalRead(lock_x) == 0 && lockx_prev == 1) {
         lockx = !lockx;
         lockx_prev = 0;
-      } else if (digtalRead(lock_x) == 1 && lockx_prev == 0) {
+      } else if (digitalRead(lock_x) == 1 && lockx_prev == 0) {
         lockx_prev = 1;
       }
       if (digitalRead(lock_y) == 0 && locky_prev == 1) {
         locky = !locky;
         locky_prev = 0;
-      } else if (digtalRead(lock_y) == 1 && locky_prev == 0) {
+      } else if (digitalRead(lock_y) == 1 && locky_prev == 0) {
         locky_prev = 1;
       }
 
@@ -154,20 +155,23 @@ void loop() {
         stretch = 0;
 
       // Handling speed button
-      if (Speed == 1 && speed_prev == 0) {
+      if (Speed == 1) {
         speed = !speed;
-        speed_prev = 1;
-      } else (Speed == 0 && speed_prev == 1) {
-        speed_prev = 0;
-      }
+      } 
 
       // Turn on indicators accordingly
       if (speed)
         digitalWrite(speed_in, HIGH);
+      else
+        digitalWrite(speed_in, LOW);
       if (lockx)
         digitalWrite(lockx_in, HIGH);
+      else
+        digitalWrite(lockx_in, LOW);
       if (locky)
         digitalWrite(locky_in, HIGH);
+      else
+        digitalWrite(locky_in, LOW);
 
       // val <velx> <vely> <velw> <pick> <stretch> <tilt> <lockx> <locky> <speed>
       msg = String("val") + String(" ") + String(vel_y) + String(" ") + String(vel_x) + String(" ") + String(vel_w) + " " + String(pick) + " " + String(stretch) + String(" ") + String(tilt) + " " + String(lockx) + " " + String(locky) + " " + String(speed);

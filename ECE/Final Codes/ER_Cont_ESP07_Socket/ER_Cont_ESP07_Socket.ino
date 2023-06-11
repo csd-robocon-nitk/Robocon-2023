@@ -48,4 +48,7 @@ void loop() {
     // Send message to client
     client.send(msg);
   }
+  else {
+    isConnected = 0;
+  }
 }

@@ -47,7 +47,7 @@ void TimerHandler()
 {
   vel_z = g.gyro.z - err_z;
   cur_z = vel_z*0.573;
-  z = (fabs(cur_z)>0.03)?z + (cur_z):z;
+  //z = (fabs(cur_z)>0.03)?z + (cur_z):z;
 }
 
 void setup() 
@@ -103,14 +103,13 @@ void setup()
   if (ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 20, TimerHandler))
   {
     Serial.print(F("Starting  ITimer OK, millis() = ")); Serial.println(millis());
-    digitalWrite(LED_BUILTIN, HIGH);
   }
   else
     Serial.println(F("Can't set ITimer. Select another freq. or timer"));
   
   // Connect client to server at port 80
   bool connected = client.connect(subnet, 80, "/");
-
+  
   // Callback function to be executed when client recieves data
   client.onMessage([](WebsocketsMessage message){
     msg = message.data();
@@ -148,7 +147,12 @@ void loop()
 {
   // Keep checking for new message from server
   if(client.available()) {
+    digitalWrite(LED_BUILTIN, HIGH);
     client.poll();
+  }
+  else {
+    digitalWrite(LED_BUILTIN, LOW);
+    bool connected = client.connect(subnet, 80, "/");
   }
   mpu.getEvent(&a, &g, &temp);
 }
