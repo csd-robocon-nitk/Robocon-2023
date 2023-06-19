@@ -55,16 +55,21 @@ int pick = 0;
 // For lifting
 int lift = 0;
 
+int prev_shoot = 0, prev_rel = 0;
+
 // Function to move stepper motor
 void move_stepper() {
   if (step_pow == -1 && digitalRead(shooter_back)!=0) {
-    digitalWrite(stepper_dir, 0);
-    analogWrite(stepper_pwm, 255);
-  } else if (step_pow == 1 && digitalRead(shooter_front)!=0) {
     digitalWrite(stepper_dir, 1);
-    analogWrite(stepper_pwm, 255);
+    analogWrite(stepper_pwm, 150);
+    digitalWrite(solenoid_pin, LOW);
+  } else if (step_pow == 1 && digitalRead(shooter_front)!=0) {
+    digitalWrite(stepper_dir, 0);
+    analogWrite(stepper_pwm, 50);
+    digitalWrite(solenoid_pin, LOW);
   } else {
     analogWrite(stepper_pwm, 0);
+    digitalWrite(solenoid_pin, HIGH);
   }
 }
 
@@ -102,18 +107,13 @@ void reload_seq() {
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  while (analogRead(pick_up) != 0) {
-    //Move picking plate up and turn on solenoid
-    digitalWrite(pick_dir, LOW);
-    analogWrite(pick_pwm, 100);
-  }
-  analogWrite(pick_pwm, 0);
+  delay(500);
   while (analogRead(gantry_right) >= 5) {
     //Move gantry right
     digitalWrite(gantry_dir, 0);
     digitalWrite(gantry_pwm, 1);
   }
-  digitalWrite(solenoid_pin, LOW);
+  // digitalWrite(solenoid_pin, LOW);
   digitalWrite(gantry_pwm, 0);
   while (digitalRead(gantry_left) != 0) {
     //Move gantry left and switch of solenoid
@@ -121,17 +121,17 @@ void reload_seq() {
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  digitalWrite(solenoid_pin, HIGH);
+  //digitalWrite(solenoid_pin, HIGH);
 }
 
 // Function to run shooting sequence
 void shoot_seq() {
   // Release shooting plate and ring
-  digitalWrite(solenoid_pin, LOW);
+  // digitalWrite(solenoid_pin, HIGH);
   delay(500);
   latch_s.write(0);
   delay(1000);
-  digitalWrite(solenoid_pin, HIGH);
+  // digitalWrite(solenoid_pin, HIGH);
   // Move forward and latch to shooting plate
   while (digitalRead(shooter_front) != 0) {
     step_pow = 1;
@@ -142,6 +142,7 @@ void shoot_seq() {
   delay(300);
   latch_s.write(45);
   delay(1000);
+  // digitalWrite(solenoid_pin, LOW);
 }
 
 
@@ -163,7 +164,9 @@ void loop() {
 
   // Splitting the data
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 10) {
+    prev_shoot = 0;
+    prev_rel = 0;
+    while (var <= 7) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
         str_buff[j] = 0;
         switch (var) {
@@ -186,9 +189,15 @@ void loop() {
       j++;
     }
   } else if (msg_str[0] == 's' && msg_str[1] == 'h' && msg_str[2] == 't') {
-    shoot_seq();
-  } else if (msg_str[0] == 'r' && msg_str[1] == 'e' && msg_str[2] == 'l') {
-    reload_seq();
+    if(prev_shoot == 0) {
+      shoot_seq();
+      prev_shoot = 1;
+    }
+  } else if (msg_str[0] == 'r' && msg_str[1] == 'e') {
+    if(prev_rel == 0) {
+      reload_seq();
+      prev_rel = 1;
+    }
   }
   move_picker();
   move_stepper();

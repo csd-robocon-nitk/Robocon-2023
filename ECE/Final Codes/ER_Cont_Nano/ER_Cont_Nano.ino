@@ -55,7 +55,6 @@ void setup() {
 }
 
 void loop() {
-  ps2x.Analog(1);
   ps2x.read_gamepad();
 
   // Handling reset buttons first

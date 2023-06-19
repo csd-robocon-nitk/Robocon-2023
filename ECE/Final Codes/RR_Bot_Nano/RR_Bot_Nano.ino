@@ -46,7 +46,7 @@ void setup() {
   esc.write(0);
   delay(5000);
   g_servo.write(180);
-  shoot_seq();
+  // shoot_seq();
 }
 
 // For serial communication
@@ -59,6 +59,11 @@ int pick = 0;
 
 // For tilting
 int tilt = 0;
+
+// For shooting plate
+int shoot = 0;
+
+int prev_shoot = 0, prev_rel = 0;
 
 // Function to move picking plate
 void move_picker() {
@@ -73,14 +78,27 @@ void move_picker() {
   }
 }
 
+// Function to move shooter plate
+void move_plate() {
+  if(shoot == -1 && analogRead(shooter_front)!=0) {
+    digitalWrite(push_dir, 0);
+    digitalWrite(push_pwm, 1);
+  } else if(shoot == 1 && digitalRead(shooter_back)!=0) {
+    digitalWrite(push_dir, 1);
+    digitalWrite(push_pwm, 1);
+  } else {
+    digitalWrite(push_pwm, 0);
+  }
+}
+
 // Function to tilt shooting mechanism
 void move_tilt() {
   if (tilt == 1) {
     digitalWrite(tilt_dir, HIGH);
-    analogWrite(tilt_pwm, 100);
+    analogWrite(tilt_pwm, 255);
   } else if (tilt == -1) {
     digitalWrite(tilt_dir, LOW);
-    analogWrite(tilt_pwm, 100);
+    analogWrite(tilt_pwm, 255);
   } else {
     digitalWrite(tilt_pwm, 0);
   }
@@ -94,12 +112,7 @@ void reload_seq() {
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  while (digitalRead(pick_up) != 0) {
-    //Move picking plate up
-    digitalWrite(pick_dir, LOW);
-    analogWrite(pick_pwm, 100);
-  }
-  analogWrite(pick_pwm, 0);
+  delay(500);
   while (digitalRead(gantry_right) != 0) {
     //Move gantry right
     digitalWrite(gantry_dir, 0);
@@ -123,7 +136,7 @@ void reload_seq() {
 void shoot_seq() {
   // Turn on BLDC
   esc.write(180);
-  delay(500);
+  delay(1000);
 
   // Push ring forward
   while (analogRead(shooter_front) != 0) {
@@ -153,19 +166,24 @@ void loop() {
     }
     idx++;
   }
-
+  // Serial.println(msg_str);
   int i = 4;
   int j = 0;
   int var = 1;
 
   // Splitting the data
   if (msg_str[0] == 'v' && msg_str[1] == 'a' && msg_str[2] == 'l') {
-    while (var <= 10) {
+    prev_shoot = 0;
+    prev_rel = 0;
+    while (var <= 7) {
       if (msg_str[i] == ' ' || msg_str[i] == 0) {
         str_buff[j] = 0;
         switch (var) {
           case 4:
             pick = atoi(str_buff);
+            break;
+          case 5:
+            shoot = atoi(str_buff);
             break;
           case 6:
             tilt = atoi(str_buff);
@@ -180,10 +198,17 @@ void loop() {
       j++;
     }
   } else if (msg_str[0] == 's' && msg_str[1] == 'h' && msg_str[2] == 't') {
-    shoot_seq();
-  } else if (msg_str[0] == 'r' && msg_str[1] == 'e' && msg_str[2] == 'l') {
-    reload_seq();
+    if(prev_shoot == 0) {
+      shoot_seq();
+      prev_shoot = 1;
+    }
+  } else if (msg_str[0] == 'r' && msg_str[1] == 'e' & msg_str[2] == 'l') {
+    if(prev_rel == 0) {
+      reload_seq();
+      prev_rel = 1;
+    }
   }
   move_picker();
   move_tilt();
+  move_plate();
 }
