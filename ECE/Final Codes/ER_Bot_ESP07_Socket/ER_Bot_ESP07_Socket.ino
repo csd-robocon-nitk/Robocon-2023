@@ -19,7 +19,7 @@
 #define rst_nano 14
 
 // ssid and password of ER controller AP
-const char* ssid = "CRN1";
+const char* ssid = "CRN2";
 const char* password = "robocon2k23";
 int port = 80;
 
@@ -47,7 +47,7 @@ void TimerHandler()
 {
   vel_z = g.gyro.z - err_z;
   cur_z = vel_z*0.573;
-  //z = (fabs(cur_z)>0.03)?z + (cur_z):z;
+  z = (fabs(cur_z)>0.03)?z + (cur_z):z;
 }
 
 void setup() 

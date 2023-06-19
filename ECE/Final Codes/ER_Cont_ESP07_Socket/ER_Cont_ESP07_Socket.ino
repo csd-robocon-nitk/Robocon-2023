@@ -4,7 +4,7 @@
 #define LF 0x0A
 
 // Setting up wifi ssid and password
-const char* ssid = "CRN1";
+const char* ssid = "CRN2";
 const char* password = "robocon2k23";
 
 int isConnected = 0;
