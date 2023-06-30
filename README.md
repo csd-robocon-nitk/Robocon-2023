@@ -1,4 +1,4 @@
-![CRN Logo](Media/CSD%20Robocon%20NITK%20Logo.png)
+![CRN Logo](Media/CRN%20Logo.png)
 
 # Overview
 This repository contains all the codes and PCB designs used for ABU Robocon 2023.
