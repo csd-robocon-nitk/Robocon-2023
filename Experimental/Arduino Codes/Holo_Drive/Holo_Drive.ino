@@ -1,14 +1,24 @@
+// Initial code for basic 4 wheel holonomic drive
+// Note: The PS2 controller is directly connected to the arduino on the bot
+
 #include <PS2X_lib.h>
 
+// Pins for PS2 controller
 #define PS2_DAT        51      
 #define PS2_CMD        50  
 #define PS2_SEL        53  
 #define PS2_CLK        52 
 
+// PWM and DIR pins of each motor
 int dir1 = 2, dir2 = 4, dir3 = 7, dir4 = 8;
 int pwm1 = 3, pwm2 = 5, pwm3 = 6, pwm4 = 9;
+
 PS2X ps2x;
+
+// Maximum PWM value for motors
 int pwm = 40;
+
+// To reduce sensitivity of joystick
 int deadzone = 10;
 
 void setup() {
@@ -27,12 +37,13 @@ void setup() {
   analogWrite(pwm3, 0);
   analogWrite(pwm4, 0);
   digitalWrite(13, LOW);
+
+  // Configure PS2 controller
   int error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, false, false);
   if(error == 0){
     Serial.println("Found Controller, configured successful ");
     digitalWrite(13, HIGH);   
   }
-  byte type = ps2x.readType();
 }
 
 void loop() {
@@ -42,6 +53,8 @@ void loop() {
   int RY = ps2x.Analog(PSS_RY);
   int RX = ps2x.Analog(PSS_RX);
   int i = 0;
+
+  // For translational motion
   if (abs(128-LY)>deadzone || abs(128-LX)>deadzone){
     float p1 = (128-LY)/128.0;       // CONTROL VARS FOR WHEELS 1,3
     float p2 = (128-LX)/128.0;       // CONTROL VARS FOR WHEELS 2,4
@@ -50,6 +63,8 @@ void loop() {
     Serial.println(p2);    
     move(round(p1*pwm),round(p2*pwm),round(p1*pwm),round(p2*pwm));
   } 
+
+  // For rotational motion
   else if (abs(128-RX)>deadzone || abs(128-RY)>deadzone) {
     float p1 = (128-RX)/128.0; 
     float p2 = p1*-1; 
@@ -62,6 +77,7 @@ void loop() {
     move(0,0,0,0);
 }
 
+// Function to run each motor
 void move(int p1,int p2,int p3,int p4)
 {
   analogWrite(pwm1, abs(p1));
