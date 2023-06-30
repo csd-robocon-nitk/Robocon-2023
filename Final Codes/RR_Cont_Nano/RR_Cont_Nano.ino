@@ -6,7 +6,7 @@
 #define PS2_SEL 10
 #define PS2_CLK 13
 
-// Pin numbers of other buttons.......Change these
+// Pin numbers of other buttons
 #define plate_up A7
 #define plate_down A6
 #define rotate_cw 3
@@ -20,7 +20,7 @@
 #define type5 2
 #define adj_pos 9
 
-// Pins of led indicators...Change these too
+// Pins of led indicators
 #define lockx_in A1
 #define locky_in A2
 #define speed_in A3

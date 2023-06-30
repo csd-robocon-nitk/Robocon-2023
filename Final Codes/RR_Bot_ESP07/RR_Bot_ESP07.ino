@@ -29,11 +29,11 @@ const char* password = "robocon2k23";
 String msg;
 String subnet;
 
+// Variables for angle calculation
 float z = 0;
 sensors_event_t a, g, temp;
 float vel_z;
 float cur_z;
-
 float err_z;
 
 Adafruit_MPU6050 mpu;
@@ -42,12 +42,13 @@ Adafruit_MPU6050 mpu;
 
 ESP8266Timer ITimer;
 
-// void TimerHandler()
-// {
-//   vel_z = g.gyro.z - err_z;
-//   cur_z = vel_z*0.573;
-//   z = (fabs(cur_z)>0.03)?z + (cur_z):z;
-// }
+// Timer handler, gets executed at every interval of a set time
+void TimerHandler()
+{
+  vel_z = g.gyro.z - err_z;
+  cur_z = vel_z*0.573;
+  z = (fabs(cur_z)>0.03)?z + (cur_z):z;
+}
 
 void setup() 
 {
@@ -79,33 +80,33 @@ void setup()
   subnet = String(localIp[0]) + "." + String(localIp[1]) + "." + String(localIp[2]) + ".1";
   Serial.println(subnet);
   
-  //mpu settings
-  // mpu.enableSleep(false);
-  // mpu.enableCycle(false);
-  // mpu.begin();
-  // mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  // mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  // mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  // Serial.println("");
-  // delay(1000);
+  // mpu settings
+  mpu.enableSleep(false);
+  mpu.enableCycle(false);
+  mpu.begin();
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  Serial.println("");
+  delay(1000);
 
-  //Calibrating MPU6050
-  // Serial.println("Calibrating....Do not move mpu6050");
-  // mpu.getEvent(&a, &g, &temp);
-  // err_z = g.gyro.z;
-  // Serial.println("Done");
-  // Serial.println("");
-  // delay(2000);
+  // Calibrating MPU6050
+  Serial.println("Calibrating....Do not move mpu6050");
+  mpu.getEvent(&a, &g, &temp);
+  err_z = g.gyro.z;
+  Serial.println("Done");
+  Serial.println("");
+  delay(2000);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  //Enabling timer
-  // if (ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 20, TimerHandler))
-  // {
-  //   Serial.print(F("Starting  ITimer OK, millis() = ")); Serial.println(millis());
-  //   digitalWrite(LED_BUILTIN, HIGH);
-  // }
-  // else
-  //   Serial.println(F("Can't set ITimer. Select another freq. or timer"));
+  // Enabling timer
+  if (ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 20, TimerHandler))
+  {
+    Serial.print(F("Starting  ITimer OK, millis() = ")); Serial.println(millis());
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+  else
+    Serial.println(F("Can't set ITimer. Select another freq. or timer"));
 }
 
 #define CHECK_INTERVAL_MS     10000L
@@ -113,8 +114,13 @@ void setup()
 
 void loop() 
 {
+  // Obtaining server address
   String serverName = "http://"+subnet+"/controller";
+
+  // Extracting data from MPU6050
   mpu.getEvent(&a, &g, &temp);
+
+  // Sending request to server
   msg = httpGETRequest(serverName);
 
   // Arduino Mega reset logic
@@ -146,8 +152,6 @@ String httpGETRequest(String serverName)
 {
   WiFiClient client;
   HTTPClient http;
-    
-  // Your IP address with path or Domain name with URL path
   http.begin(client, serverName);
 
   // Send HTTP GET request

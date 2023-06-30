@@ -19,7 +19,7 @@
 #define rst_nano 14
 
 // ssid and password of ER controller AP
-const char* ssid = "CRN2";
+const char* ssid = "CRN1";
 const char* password = "robocon2k23";
 int port = 80;
 

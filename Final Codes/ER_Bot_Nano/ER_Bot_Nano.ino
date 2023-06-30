@@ -2,42 +2,45 @@
 
 #define LF 0x0A
 
+// Defining pins for each component
 #define gantry_right A2
 #define gantry_left A5
 #define shooter_back A3
 #define shooter_front A4
 #define pick_up A7
 #define pick_down A6
-#define solenoid_pin 6
 #define latch_pin 5
-#define stepper_pwm 11
-#define stepper_dir 13
+#define bldc_pwm 11
+#define bldc_dir 13
 #define pick_pwm 3
 #define pick_dir 4
 #define gantry_pwm 9
 #define gantry_dir A0
-#define lift_pwm 10
-#define lift_dir A1
+#define tilt_pwm 10
+#define tilt_dir A1
 
 Servo latch_s;
 
 void setup() {
+  // Starting serial communication
   Serial.begin(115200);
+
   pinMode(gantry_right, INPUT);
   pinMode(gantry_left, INPUT_PULLUP);
   pinMode(shooter_back, INPUT_PULLUP);
   pinMode(shooter_front, INPUT_PULLUP);
   pinMode(solenoid_pin, OUTPUT);
-  pinMode(stepper_dir, OUTPUT);
-  pinMode(stepper_pwm, OUTPUT);
+  pinMode(bldc_dir, OUTPUT);
+  pinMode(bldc_pwm, OUTPUT);
   pinMode(pick_dir, OUTPUT);
   pinMode(pick_pwm, OUTPUT);
   pinMode(gantry_dir, OUTPUT);
   pinMode(gantry_pwm, OUTPUT);
-  pinMode(lift_pwm, OUTPUT);
-  pinMode(lift_dir, OUTPUT);
+  pinMode(tilt_pwm, OUTPUT);
+  pinMode(tilt_dir, OUTPUT);
   latch_s.attach(latch_pin);
-  digitalWrite(solenoid_pin, HIGH);
+
+  // Running shoot sequence at startup for bringing shooting mechanism to initial state
   shoot_seq();
 }
 
@@ -46,25 +49,25 @@ char msg_str[100];
 char str_buff[7];
 int idx;
 
-// For stepper motor
-int step_pow = 0;
+// For bldc motor
+int bldc_pow = 0;
 
 // For picking
 int pick = 0;
 
-// For lifting
-int lift = 0;
+// For tilting
+int tilt = 0;
 
 // Function to move stepper motor
-void move_stepper() {
-  if (step_pow == -1 && digitalRead(shooter_back)!=0) {
-    digitalWrite(stepper_dir, 0);
-    analogWrite(stepper_pwm, 255);
-  } else if (step_pow == 1 && digitalRead(shooter_front)!=0) {
-    digitalWrite(stepper_dir, 1);
-    analogWrite(stepper_pwm, 255);
+void move_bldc() {
+  if (bldc_pow == -1 && digitalRead(shooter_back)!=0) {
+    digitalWrite(bldc_dir, 0);
+    analogWrite(bldc_pwm, 255);
+  } else if (bldc_pow == 1 && digitalRead(shooter_front)!=0) {
+    digitalWrite(bldc_dir, 1);
+    analogWrite(bldc_pwm, 255);
   } else {
-    analogWrite(stepper_pwm, 0);
+    analogWrite(bldc_pwm, 0);
   }
 }
 
@@ -81,47 +84,45 @@ void move_picker() {
   }
 }
 
-// Function to lift shooting mechanism
-void move_lift() {
-  if (lift == 1) {
-    digitalWrite(lift_dir, LOW);
-    digitalWrite(lift_pwm, 1);
-  } else if (lift == -1) {
-    digitalWrite(lift_dir, HIGH);
-    digitalWrite(lift_pwm, 1);
+// Function to tilt shooting mechanism
+void move_tilt() {
+  if (tilt == 1) {
+    digitalWrite(tilt_dir, LOW);
+    digitalWrite(tilt_pwm, 1);
+  } else if (tilt == -1) {
+    digitalWrite(tilt_dir, HIGH);
+    digitalWrite(tilt_pwm, 1);
   } else {
-    digitalWrite(lift_pwm, 0);
+    digitalWrite(tilt_pwm, 0);
   }
 }
 
 // Function for reloading sequence
 void reload_seq() {
+  // Move gantry left
   while (digitalRead(gantry_left) != 0) {
-    // Move gantry left
     digitalWrite(gantry_dir, 1);
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
+  //Move picking plate up
   while (analogRead(pick_up) != 0) {
-    //Move picking plate up and turn on solenoid
     digitalWrite(pick_dir, LOW);
     analogWrite(pick_pwm, 100);
   }
   analogWrite(pick_pwm, 0);
+  //Move gantry right
   while (analogRead(gantry_right) >= 5) {
-    //Move gantry right
     digitalWrite(gantry_dir, 0);
     digitalWrite(gantry_pwm, 1);
   }
-  digitalWrite(solenoid_pin, LOW);
   digitalWrite(gantry_pwm, 0);
+  //Move gantry left
   while (digitalRead(gantry_left) != 0) {
-    //Move gantry left and switch of solenoid
     digitalWrite(gantry_dir, 1);
     digitalWrite(gantry_pwm, 1);
   }
   digitalWrite(gantry_pwm, 0);
-  digitalWrite(solenoid_pin, HIGH);
 }
 
 // Function to run shooting sequence
@@ -134,11 +135,11 @@ void shoot_seq() {
   digitalWrite(solenoid_pin, HIGH);
   // Move forward and latch to shooting plate
   while (digitalRead(shooter_front) != 0) {
-    step_pow = 1;
-    move_stepper();
+    bldc_pow = 1;
+    move_bldc();
   }
-  step_pow = 0;
-  move_stepper();
+  bldc_pow = 0;
+  move_bldc();
   delay(300);
   latch_s.write(45);
   delay(1000);
@@ -171,10 +172,10 @@ void loop() {
             pick = atoi(str_buff);
             break;
           case 5:
-            step_pow = atoi(str_buff);
+            bldc_pow = atoi(str_buff);
             break;
           case 6:
-            lift = atoi(str_buff);
+            tilt = atoi(str_buff);
             break;
         }
         var++;
@@ -191,6 +192,6 @@ void loop() {
     reload_seq();
   }
   move_picker();
-  move_stepper();
-  move_lift();
+  move_bldc();
+  move_tilt();
 }

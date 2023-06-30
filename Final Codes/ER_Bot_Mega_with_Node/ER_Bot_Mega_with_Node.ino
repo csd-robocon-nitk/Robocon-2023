@@ -6,6 +6,7 @@ char str_buff[7];
 int idx;
 unsigned long release = 0;
 
+// Conversion matrix for holonomic drive
 float conv_matrix[3][3] = { { 0, -1.3334, 0.8 }, { 1.1547, 0.6667, 0.8 }, { -1.1547, 0.6667, 0.8 } };
 
 // Variable to determine locking x and y direction motion
@@ -123,7 +124,8 @@ void loop() {
       j++;
     }
   }
-    
+  
+  // Converting bot velocities to wheel velocities
   multiply();
 
   // Printing values for debugging purposes

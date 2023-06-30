@@ -146,8 +146,6 @@ String httpGETRequest(String serverName)
 {
   WiFiClient client;
   HTTPClient http;
-    
-  // Your IP address with path or Domain name with URL path
   http.begin(client, serverName);
 
   // Send HTTP GET request
