@@ -1,3 +1,5 @@
+// Program to lock the orientation of a robot using MPU6050
+
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
@@ -11,16 +13,20 @@ int tar = 90;
 float e,e_sum = 0,e_der = 0;
 float e_prev = tar;
 
+// Motor struct
 struct Motor {
   int PWM;
   int DIR;
 };
 
+// Array of motors
 Motor motors[4];
 
 void setup() {
   Serial.begin(115200);
   Serial.println("Setting Up Motors");
+
+  // Defining motor pins
   motors[0].PWM = 5, motors[0].DIR = 4;
   motors[1].PWM = 7, motors[1].DIR = 6;
   motors[2].PWM = 9, motors[2].DIR = 8;
@@ -29,6 +35,8 @@ void setup() {
     pinMode(motors[i].PWM, OUTPUT);
     pinMode(motors[i].DIR, OUTPUT);
   }
+
+  // Setting up mpu6050
   Serial.println("Finding Adafruit MPU6050");
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
@@ -39,6 +47,8 @@ void setup() {
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
   Serial.println("");
   delay(1000);
+
+  // Calibrating mpu6050
   Serial.println("Calibrating....Do not move mpu6050");
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -49,11 +59,14 @@ void setup() {
 }
 
 void loop() {
+  // Get gyro data from mpu6050
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
   float vel_x = g.gyro.x - err_x;
   float vel_y = g.gyro.y - err_y;
   float vel_z = g.gyro.z  - err_z;
+
+  // Claculate the current orientation
   float cur_x = vel_x*0.573;  
   float cur_y = vel_y*0.573;  
   float cur_z = vel_z*0.573;   
@@ -61,13 +74,8 @@ void loop() {
   y = (cur_y>=0.03 || cur_y<=-0.03)?(y + cur_y*1.36):y;
   z = (cur_z>=0.03 || cur_z<=-0.03)?(z + cur_z*1.36):z;
   Serial.print(z);
-  Serial.print(" ");
-  Serial.print(e);
-  Serial.print(" ");
-  Serial.print(e_sum);
-  Serial.print(" ");
-  Serial.print(e_der);
-  Serial.print(" ");
+
+  // PID Control
   e = tar - z;
   e_sum = e_sum + e*0.05;
   e_der = (e - e_prev)/0.01;
@@ -80,10 +88,13 @@ void loop() {
   Serial.print(pwm);
   Serial.println(" ");
   e_prev = e;
+
+  // Rotate the robot to return to 0 degrees
   run_motor(pwm);
   delay(10);
 }
 
+// Function to rotate the robot
 void run_motor(int pwm)
 {  
   for(int i = 0;i<4;i++){

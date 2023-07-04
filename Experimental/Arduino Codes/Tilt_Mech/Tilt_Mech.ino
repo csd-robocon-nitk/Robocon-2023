@@ -1,3 +1,5 @@
+//Code for tilt mechanism automation. The program moves to tile mechanism to a desired angle.
+
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
@@ -5,6 +7,8 @@
 float x = 0;
 float y = 0;
 float z = 0;
+
+// Target angle
 float tar_ang=60;
 float e_int=0;
 float err_x,err_y,err_z;
@@ -13,6 +17,7 @@ long t_prev, t_curr;
 long t_prev_mpu, t_curr_mpu;
 float del_T=100;
 
+// Defining pins for motor driver
 #define DirPin 10
 #define PwmPin 11
 
@@ -24,6 +29,8 @@ void setup(void)
   pinMode(DirPin, OUTPUT);
   pinMode(PwmPin, OUTPUT);
   digitalWrite(DirPin, 0);
+
+  // Setting up MPU6050
   Wire.begin();
   Wire.beginTransmission(0x68);
   Wire.write(0x6B); 
@@ -35,6 +42,8 @@ void setup(void)
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
   Serial.println("");
   delay(1000);
+
+  // Calibrating MPU6050
   Serial.println("Calibrating....Do not move mpu6050");
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -48,6 +57,7 @@ void setup(void)
 
 void loop() 
 { 
+  // Calculate angle every 10 milliseconds
 	t_curr_mpu = millis();
 	if(t_curr_mpu-t_prev_mpu >= 10)
   {
@@ -72,6 +82,8 @@ void loop()
 		Serial.println(round(z));
 		t_prev = millis();
   }
+
+  // PI controller for linear actuator
   t_curr = millis();
   if(t_curr-t_prev >= del_T)
   {
